@@ -62,9 +62,10 @@ public class ChatServer extends WebSocketServer {
                 String filePath = FileUtils.DIR + File.separator + FileUtils.stringToMD5(data.host) + File.separator + URLEncoder.encode(data.page.substring(data.page.indexOf(data.host) + data.host.length(), data.page.lastIndexOf(".")));
 
                 FileUtils.writeFile(filePath + File.separator + "list.json", json, false);
-                for (String datum : data.data) {
-                    FileUtils.save(filePath, datum);
-                }
+                ScanService.scanService.needWork(filePath);
+//                for (String datum : data.data) {
+//                    FileUtils.save(filePath, datum);
+//                }
             }
         });
 

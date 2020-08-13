@@ -6,7 +6,12 @@ import com.google.gson.reflect.TypeToken;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ScanService extends Thread {
 
@@ -15,32 +20,61 @@ public class ScanService extends Thread {
     private ScanService() {
     }
 
-    volatile int state = 0;
+    private volatile int state = 0;
 
     boolean needReload = false;
+    private Lock lock = new ReentrantLock();
+
+    private String currentWorkPath;
 
     @Override
     public void run() {
-        while (state == 0) {
-            System.out.println("start to scan=======================");
-            scanDir();
-            System.out.println("finish scan sleep=====================");
-          while (true){
-              try {
-                  System.out.println("running call :"+FileUtils.client.dispatcher().runningCalls().size());
-                  System.out.println("awaiting call :"+FileUtils.client.dispatcher().queuedCalls().size());
-                  Thread.sleep(3000);
-              } catch (InterruptedException e) {
-                  e.printStackTrace();
-              }
-          }
+        System.out.println("start to scan=======================");
+        scanDir();
+        System.out.println("finish scan =====================");
+        while (true) {
+
+            if (state == 0) {
+                lock.lock();
+                try {
+                    System.out.println("start to scan :" + currentWorkPath + "=======================");
+                    findListFile(currentWorkPath);
+                    System.out.println("finish scan :" + currentWorkPath + "=====================");
+                } catch (Exception e) {
+                    e.printStackTrace();
+
+                } finally {
+                    lock.unlock();
+                }
+                state = 1;
+            } else {
+                System.out.println("scanService park");
+                LockSupport.park(scanService);
+            }
+
+            System.out.println("running call : " + FileUtils.client.dispatcher().runningCalls().size());
+            System.out.println("awaiting call : " + FileUtils.client.dispatcher().queuedCalls().size());
         }
+    }
+
+
+    public void needWork(String workPath) {
+        lock.lock();
+        try {
+            state = 0;
+            currentWorkPath = workPath;
+        } finally {
+            lock.unlock();
+        }
+        System.out.println("scanService unpark");
+        LockSupport.unpark(scanService);
+
     }
 
     private void scanDir() {
         try {
             find(FileUtils.DIR);
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -73,66 +107,76 @@ public class ScanService extends Thread {
 
             if (file.isDirectory()) {
                 System.out.println(name);
-
+                findListFile(file.getPath());
                 find(file.getCanonicalPath());
-
-            } else {
-                if(name.equalsIgnoreCase("reloadss.json")){
-                    reload(file);
-                }
-                if (name.equals("list.json")) {
-//                    System.out.println(name);
-                    String json = FileUtils.readFile(file.getPath()).toString();
-
-                    Data data = new Gson().fromJson(json, Data.class);
-                    if (data == null) continue;
-                    if (data.data == null) continue;
-                    File reload = new File(dirFile.getPath(), "reload.json");
-                    int count =1;
-                    if (reload.exists()) {
-                        count=2;
-
-                    }
-                    int size = data.data.size();
-                    int file_size = file.getParentFile().list().length;
-                    if (size + count <= file_size) {
-
-                    } else {
-                        File parentFile = file.getParentFile();
-                        String[] list = parentFile.list();
-//                        List<String> reload = new ArrayList<>();
-                        for (String url : data.data) {
-                            boolean exits = false;
-                            for (String s : list) {
-                                if (url.contains(s)) {
-                                    exits = true;
-                                    break;
-                                }
-                            }
-                            if (!exits) {
-//                                reload.add(url);
-                                System.out.println(url);
-                                FileUtils.save(parentFile.getPath(), url);
-                            }
-                        }
-
-
-                        System.out.println("need reload");
-                        needReload = true;
-                    }
-
-                }
             }
         }
-        if (needReload) {
-            state = 0;
-        } else {
-            state = 1;
-        }
+    }
+
+
+    public void findListFile(String parent) {
+//        File parent = file.getParentFile();
+//        String name = file.getName();
+        if (parent == null) return;
+        if (parent.length() == 0) return;
+        checkDataComplete(parent);
+        reload(parent);
 
     }
 
-    private void reload(File file){
+    private boolean checkDataComplete(String parent) {
+        Gson gson = new Gson();
+        File file = new File(getListFilePath(parent));
+        if (file.exists()) {
+//                    System.out.println(name);
+            String json = FileUtils.readFile(file.getPath()).toString();
+
+            Data data = gson.fromJson(json, Data.class);
+            if (data == null) return false;
+            if (data.data == null) return false;
+
+            List<String> reload = new ArrayList<>();
+            if (data.state == 0) {
+                File parentFile = file.getParentFile();
+                String[] list = parentFile.list();
+                for (String url : data.data) {
+                    boolean exits = false;
+                    for (String s : list) {
+                        if (url.contains(s)) {
+                            exits = true;
+                            break;
+                        }
+                    }
+                    if (!exits) {
+                        reload.add(url);
+                        System.out.println("found need load :" + url);
+//                        FileUtils.save(parentFile.getPath(), url);
+                    }
+                }
+                needReload = true;
+            }
+            if (reload.size() > 0) {
+                System.out.println("need reload");
+                data.state = 1;
+                FileUtils.addOrUpdate(getReloadFilePath(parent), reload.toArray(new String[reload.size()]));
+                FileUtils.writeFile(file.getPath(), gson.toJson(data), false);
+            }
+
+            if (reload.size() == 0 && data.state != 2) {
+                data.state = 2;
+                FileUtils.writeFile(file.getPath(), gson.toJson(data), false);
+                System.out.println("complete");
+            }
+
+        }
+        return false;
+    }
+
+    private void reload(String parent) {
+        File file = new File(getReloadFilePath(parent));
+        if (!file.exists()) {
+            return;
+        }
         Gson gson = new Gson();
         List<ImgData> list = new ArrayList<>();
         StringBuilder temp = FileUtils.readFile(file.getPath());
@@ -143,6 +187,14 @@ public class ScanService extends Thread {
                 FileUtils.save(file.getParentFile().getPath(), imgData.url);
             }
         }
+    }
+
+    public String getReloadFilePath(String parent) {
+        return parent + File.separator + "reload.json";
+    }
+
+    public String getListFilePath(String parent) {
+        return parent + File.separator + "list.json";
     }
 
     public static void main(String[] args) {

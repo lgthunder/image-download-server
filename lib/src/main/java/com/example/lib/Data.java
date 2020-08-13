@@ -8,5 +8,6 @@ public class Data implements Serializable {
     String page;
     String host;
     int size;
+    int state;//0 init;1 need reload;2 complete
     List<String> data;
 }

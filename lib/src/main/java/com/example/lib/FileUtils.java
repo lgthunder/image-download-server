@@ -18,6 +18,7 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -123,11 +124,14 @@ public final class FileUtils {
             sf.mkdirs();
         }
         final String newFileName = url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf(".")) + "." + extensionName;
-        final String tempFileName ="11aatemp"+ url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf("."))  + "." + extensionName;
+        final String tempFileName = "11aatemp" + url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf(".")) + "." + extensionName;
         final File file = new File(sf.getPath() + File.separator + newFileName);
+
         if (file.exists()) {
+            delete(reloadPath, url);
             return;
         }
+        final File tempFile = new File(sf.getPath() + File.separator + tempFileName);
         //todo tempfile
         client.dispatcher().setMaxRequestsPerHost(15);
         Request request = new Request.Builder().url(url).build();
@@ -135,8 +139,11 @@ public final class FileUtils {
             @Override
             public void onFailure(Call call, IOException e) {
                 System.out.println("failure" + savePath);
-
+                if (tempFile.exists()) {
+                    tempFile.delete();
+                }
                 addOrUpdate(reloadPath, url);
+                ScanService.scanService.needWork(savePath);
 
             }
 
@@ -144,7 +151,7 @@ public final class FileUtils {
             public void onResponse(Call call, Response response) throws IOException {
                 InputStream is = null;
                 OutputStream os = null;
-                final File tempFile = new File(sf.getPath() + File.separator + tempFileName);
+
                 try {
                     if (tempFile.exists()) {
                         tempFile.delete();
@@ -167,11 +174,13 @@ public final class FileUtils {
                     }
                 }
 
-               double re = copyFile(sf.getPath() + File.separator + tempFileName, sf.getPath() + File.separator + newFileName);
-                if(re>0){
-                    tempFile.delete();
+                double re = copyFile(sf.getPath() + File.separator + tempFileName, sf.getPath() + File.separator + newFileName);
+                if (re > 0) {
+                    if(tempFile.exists()){
+                        tempFile.delete();
+                    }
                 }
-                delete(reloadPath, url);
+                 delete(reloadPath, url);
             }
         });
 
@@ -258,10 +267,13 @@ public final class FileUtils {
 //            delete(path,"https://www.privacypic.com/images/2020/07/12/xUFI53.jpg");
     }
 
+    public static void addOrUpdate(String file, String url) {
+        addOrUpdate(file, new String[]{url});
+    }
 
-    public static void addOrUpdate(String savePath, String url) {
+    public static void addOrUpdate(String file, String[] urls) {
         Gson gson = new Gson();
-        String reloadPath = savePath;
+        String reloadPath = file;
         List<ImgData> list = new ArrayList<>();
         StringBuilder temp = readFile(reloadPath);
         if (temp != null) {
@@ -270,17 +282,21 @@ public final class FileUtils {
         } else {
             list = new ArrayList<>();
         }
-        boolean exits = false;
-        for (ImgData imgData : list) {
-            if (imgData.url.equals(url)) {
-                imgData.count = imgData.count + 1;
-                exits = true;
-                break;
+        final List<String> cache = Arrays.asList(urls);
+
+        for (String url : urls) {
+            for (ImgData imgData : list) {
+                if (imgData.url.equals(url)) {
+                    imgData.count = imgData.count + 1;
+                    cache.remove(url);
+                    break;
+                }
             }
         }
-        if (!exits) {
+        for (String url : cache) {
             list.add(new ImgData(url, 0));
         }
+
         FileUtils.writeFile(reloadPath, gson.toJson(list), false);
 
     }
@@ -298,6 +314,7 @@ public final class FileUtils {
         }
 
         ImgData exits = null;
+        if(list==null) return;
         for (ImgData imgData : list) {
             if (imgData.url.equals(url)) {
                 exits = imgData;
