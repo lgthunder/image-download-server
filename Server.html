@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Image Downloader Server</title>
+
+
+
+  </head>
+
+  <body style='background: #87cefa'>
+  
+      <div id="content" > hello world</div>
+      <div id="bottom" style="position: fixed ! important;z-index: 999;width: 20%;height: 20%;right: 100px;bottom: 100px;" >
+      <button id="btn" style="
+    position: absolute;
+    
+    bottom: 250px;
+    right: 5%;">auto scroll on</button>
+
+        <button id="toBottom" style="
+    position: absolute;
+
+    bottom: 200px;
+    right: 5%;">scroll down</button>
+      <div>
+
+
+
+
+
+
+      <script type="text/javascript">
+      var ws = new WebSocket('ws://127.0.0.1:8887')
+      var autoScroll =true
+
+    //   int call;
+    // int running;
+    // int waiting;
+   //String time;
+    // String content;
+    // 
+     ws.onopen = function()
+               {
+                  // Web Socket 已连接上，使用 send() 方法发送数据
+                  // ws.send("发送数据");
+                  console.log("send data...");
+                   ws.send("LogServer")
+                   // ws.send((JSON.stringify(data)))
+                
+               };
+                
+               ws.onmessage = function (evt) 
+               { 
+                  var received_msg = evt.data;
+                  console.log("received_msg..."+received_msg);
+                  var content =document.getElementById("content")
+
+                  var re =content.innerHTML
+                  try{
+                     var jsonObject =JSON.parse(received_msg);
+                  var messageContent ="<p style='color:#8b008b'>"+jsonObject.time+"| total call: "+jsonObject.call+"  running call :"+jsonObject.running+"  waiting call "+jsonObject.waiting+"</p>"
+                  re=re+messageContent+"<p style='color: #8b4513'>message: "+jsonObject.content+"</p>";
+                  content.innerHTML=re
+                }catch(err){
+                  console.log(err)
+                }
+                 
+                  if(autoScroll){
+                      document.documentElement.scrollTo(0,document.body.offsetHeight)
+                  }                     
+
+               };
+                
+               ws.onclose = function()
+               { 
+                  // 关闭 websocket
+                
+               };
+           
+             document.getElementById("btn").addEventListener("click",function(){
+
+                          autoScroll=!autoScroll
+                          if(autoScroll){
+                            document.getElementById("btn").innerText="auto scroll on"
+                          }else{
+                             document.getElementById("btn").innerText="auto scroll off"
+                          }
+                          
+                          
+                   })
+
+               document.getElementById("toBottom").addEventListener("click",function(){
+
+                       document.documentElement.scrollTo(0,document.body.offsetHeight)   
+                         
+                   })
+
+    </script>
+  </body>
+</html>

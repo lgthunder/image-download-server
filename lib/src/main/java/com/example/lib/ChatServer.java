@@ -22,6 +22,8 @@ import java.util.Collections;
 
 
 public class ChatServer extends WebSocketServer {
+    LogServer logServer;
+
     public ChatServer(int port) throws UnknownHostException {
         super(new InetSocketAddress(port));
     }
@@ -50,6 +52,11 @@ public class ChatServer extends WebSocketServer {
     @Override
     public void onMessage(final WebSocket conn, final String message) {
         broadcast(message);
+        if (message.equals("LogServer")) {
+            logServer = new LogServer(conn, LogCollection.getInstance().getQueue());
+            logServer.start();
+            return;
+        }
 
         MessageExecutor.executorService.execute(new Runnable() {
             @Override
@@ -57,7 +64,7 @@ public class ChatServer extends WebSocketServer {
                 Gson gson = new Gson();
                 String json = URLDecoder.decode(message);
                 Data data = gson.fromJson(json, Data.class);
-                System.out.println(conn + "String: " + json);
+                Log.log("onMessage: " + data.page);
 
                 String filePath = FileUtils.DIR + File.separator + FileUtils.stringToMD5(data.host) + File.separator + URLEncoder.encode(data.page.substring(data.page.indexOf(data.host) + data.host.length(), data.page.lastIndexOf(".")));
 

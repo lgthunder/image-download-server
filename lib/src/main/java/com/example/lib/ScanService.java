@@ -29,17 +29,17 @@ public class ScanService extends Thread {
 
     @Override
     public void run() {
-        System.out.println("start to scan=======================");
+        Log.log("start to scan " + FileUtils.DIR);
         scanDir();
-        System.out.println("finish scan =====================");
+        Log.log("finish scan " + FileUtils.DIR);
         while (true) {
 
             if (state == 0) {
                 lock.lock();
                 try {
-                    System.out.println("start to scan :" + currentWorkPath + "=======================");
+                    Log.log("start to scan :" + currentWorkPath);
                     findListFile(currentWorkPath);
-                    System.out.println("finish scan :" + currentWorkPath + "=====================");
+                    Log.log("finish scan :" + currentWorkPath);
                 } catch (Exception e) {
                     e.printStackTrace();
 
@@ -48,12 +48,9 @@ public class ScanService extends Thread {
                 }
                 state = 1;
             } else {
-                System.out.println("scanService park");
+                Log.log("scanService park");
                 LockSupport.park(scanService);
             }
-
-            System.out.println("running call : " + FileUtils.client.dispatcher().runningCalls().size());
-            System.out.println("awaiting call : " + FileUtils.client.dispatcher().queuedCalls().size());
         }
     }
 
@@ -66,7 +63,7 @@ public class ScanService extends Thread {
         } finally {
             lock.unlock();
         }
-        System.out.println("scanService unpark");
+        Log.log("scanService unpark");
         LockSupport.unpark(scanService);
 
     }
@@ -149,7 +146,7 @@ public class ScanService extends Thread {
                     }
                     if (!exits) {
                         reload.add(url);
-                        System.out.println("found need load :" + url);
+                        Log.log("found need load :" + url);
 //                        FileUtils.save(parentFile.getPath(), url);
                     }
                 }
@@ -184,7 +181,7 @@ public class ScanService extends Thread {
             list = gson.fromJson(temp.toString(), new TypeToken<ArrayList<ImgData>>() {
             }.getType());
             for (ImgData imgData : list) {
-                FileUtils.save(file.getParentFile().getPath(), imgData.url);
+                DownLoader.getInstance().load(file.getParentFile().getPath(), imgData.url);
             }
         }
     }

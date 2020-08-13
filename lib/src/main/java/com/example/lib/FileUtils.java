@@ -12,31 +12,15 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.ConnectionPool;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 public final class FileUtils {
 
-    static OkHttpClient client = new OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(false)
-            .readTimeout(20, TimeUnit.SECONDS)
-            .connectionPool(new ConnectionPool(8 * 4, 5, TimeUnit.SECONDS))
-            .build();
 
     public static String DIR = "E:\\webdownload";
 
@@ -105,87 +89,6 @@ public final class FileUtils {
         }
     }
 
-
-    public static void save(final String savePath, final String url) {
-//        String savePath ="E:\\webdownload";
-//        String url ="https://www.privacypic.com/images/2020/07/31/GCiUsk.jpg";
-        String extensionName = url.substring(url.lastIndexOf(".") + 1);
-        if (!extensionName.equalsIgnoreCase("JPEG")
-                && !extensionName.equalsIgnoreCase("jpg")
-                && !extensionName.equalsIgnoreCase("PNG")
-                && !extensionName.equalsIgnoreCase("GIF")
-                && !extensionName.equalsIgnoreCase("bmp")
-                && !extensionName.equalsIgnoreCase("tif")) {
-            return;
-        }
-        final String reloadPath = savePath + File.separator + "reload.json";
-        final File sf = new File(savePath);
-        if (!sf.exists()) {
-            sf.mkdirs();
-        }
-        final String newFileName = url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf(".")) + "." + extensionName;
-        final String tempFileName = "11aatemp" + url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf(".")) + "." + extensionName;
-        final File file = new File(sf.getPath() + File.separator + newFileName);
-
-        if (file.exists()) {
-            delete(reloadPath, url);
-            return;
-        }
-        final File tempFile = new File(sf.getPath() + File.separator + tempFileName);
-        //todo tempfile
-        client.dispatcher().setMaxRequestsPerHost(15);
-        Request request = new Request.Builder().url(url).build();
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                System.out.println("failure" + savePath);
-                if (tempFile.exists()) {
-                    tempFile.delete();
-                }
-                addOrUpdate(reloadPath, url);
-                ScanService.scanService.needWork(savePath);
-
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                InputStream is = null;
-                OutputStream os = null;
-
-                try {
-                    if (tempFile.exists()) {
-                        tempFile.delete();
-                    }
-                    is = response.body().byteStream();
-
-                    byte[] bs = new byte[1024];
-                    int len;
-
-                    os = new FileOutputStream(sf.getPath() + File.separator + tempFileName);
-                    while ((len = is.read(bs)) != -1) {
-                        os.write(bs, 0, len);
-                    }
-                } finally {
-                    if (os != null) {
-                        os.close();
-                    }
-                    if (is != null) {
-                        is.close();
-                    }
-                }
-
-                double re = copyFile(sf.getPath() + File.separator + tempFileName, sf.getPath() + File.separator + newFileName);
-                if (re > 0) {
-                    if(tempFile.exists()){
-                        tempFile.delete();
-                    }
-                }
-                 delete(reloadPath, url);
-            }
-        });
-
-
-    }
 
     public static double copyFile(String sourceFile, String targetFile) {
         return copyFile(new File(sourceFile), new File(targetFile));
@@ -282,7 +185,7 @@ public final class FileUtils {
         } else {
             list = new ArrayList<>();
         }
-        final List<String> cache = Arrays.asList(urls);
+        final List<String> cache = new ArrayList<>(Arrays.asList(urls));
 
         for (String url : urls) {
             for (ImgData imgData : list) {
@@ -314,7 +217,7 @@ public final class FileUtils {
         }
 
         ImgData exits = null;
-        if(list==null) return;
+        if (list == null) return;
         for (ImgData imgData : list) {
             if (imgData.url.equals(url)) {
                 exits = imgData;
