@@ -6,9 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
@@ -21,7 +19,7 @@ public class ScanService extends Thread {
     }
 
     private volatile int state = 0;
-
+    private volatile boolean flag = true;
     boolean needReload = false;
     private Lock lock = new ReentrantLock();
 
@@ -32,7 +30,7 @@ public class ScanService extends Thread {
         Log.log("start to scan " + FileUtils.DIR);
         scanDir();
         Log.log("finish scan " + FileUtils.DIR);
-        while (true) {
+        while (flag) {
 
             if (state == 0) {
                 lock.lock();
@@ -196,5 +194,10 @@ public class ScanService extends Thread {
 
     public static void main(String[] args) {
         scanService.start();
+    }
+
+    public void finish() {
+        flag = false;
+        LockSupport.unpark(scanService);
     }
 }

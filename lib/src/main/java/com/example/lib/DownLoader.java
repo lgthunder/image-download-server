@@ -88,7 +88,8 @@ public class DownLoader {
         }
         final File tempFile = new File(sf.getPath() + File.separator + tempFileName);
         //todo tempfile
-        client.dispatcher().setMaxRequestsPerHost(15);
+        client.dispatcher().setMaxRequestsPerHost(30);
+        client.dispatcher().setMaxRequests(100);
         for (Request request : requestCache) {
             if (request.url().toString().equals(url)) {
                 return;

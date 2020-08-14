@@ -23,18 +23,22 @@ public class LogServer extends Thread {
         while (flag) {
             try {
                 ServerLogData data = queue.take();
-                ws.send(gson.toJson(data));
+                if (ws.isOpen()) {
+                    ws.send(gson.toJson(data));
+                }
+                if (ws.isClosed() || ws.isClosing()) {
+                    flag = false;
+                }
+                if (data.equals(ServerLogData.emptyData())) {
+                    flag = false;
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public void sendLog(ServerLogData data) {
-        try {
-            queue.put(data);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+    public void finish() {
+        flag = false;
     }
 }

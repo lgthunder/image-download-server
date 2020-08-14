@@ -12,13 +12,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
+
+import okhttp3.OkHttpClient;
 
 
 public class ChatServer extends WebSocketServer {
@@ -53,8 +54,35 @@ public class ChatServer extends WebSocketServer {
     public void onMessage(final WebSocket conn, final String message) {
         broadcast(message);
         if (message.equals("LogServer")) {
-            logServer = new LogServer(conn, LogCollection.getInstance().getQueue());
+            logServer = new LogServer(conn, LogCacheServer.getInstance().getCacheQueue());
             logServer.start();
+            return;
+        }
+
+        if (message.equals("JVMServer")) {
+            ShutDownThread thread = new ShutDownThread(conn);
+            thread.start();
+            return;
+        }
+
+        if (message.equals("0001")) {
+            Log.logS("shut down");
+            try {
+                this.stop();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            DownLoader.getInstance().getClient().dispatcher().executorService().shutdown();
+            DownLoader.getInstance().getClient().connectionPool().evictAll();
+            MessageExecutor.executorService.shutdown();
+            ScanService.scanService.finish();
+            LogCollection.getInstance().sendLog(ServerLogData.emptyData());
+            LogCacheServer.getInstance().finish();
+            if (logServer != null) {
+                logServer.finish();
+            }
             return;
         }
 
@@ -87,6 +115,7 @@ public class ChatServer extends WebSocketServer {
 
     public static void main(String[] args) throws InterruptedException, IOException {
         ScanService.scanService.start();
+        LogCacheServer.getInstance().start();
         int port = 8887; // 843 flash policy port
         try {
             port = Integer.parseInt(args[0]);
@@ -96,17 +125,6 @@ public class ChatServer extends WebSocketServer {
         s.start();
         System.out.println("ChatServer started on port: " + s.getPort());
 
-        BufferedReader sysin = new BufferedReader(new InputStreamReader(System.in, "utf-8"));
-        while (true) {
-            String in = sysin.readLine();
-            if (in != null) {
-                System.out.println(in);
-            }
-            if (("exit").equals(in)) {
-                s.stop(1000);
-                break;
-            }
-        }
     }
 
     @Override
