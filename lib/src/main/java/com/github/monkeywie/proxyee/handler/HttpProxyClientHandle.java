@@ -14,7 +14,6 @@ import test.java.com.github.monkeywie.proxyee.CacheManager;
 public class HttpProxyClientHandle extends ChannelInboundHandlerAdapter {
 
     private Channel clientChannel;
-    private CacheManager cacheManager = new CacheManager();
 
     public HttpProxyClientHandle(Channel clientChannel) {
         this.clientChannel = clientChannel;
@@ -22,7 +21,6 @@ public class HttpProxyClientHandle extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-      cacheManager.saveResponseAsCache(clientChannel,ctx,msg);
         //客户端channel已关闭则不转发了
         if (!clientChannel.isOpen()) {
             ReferenceCountUtil.release(msg);

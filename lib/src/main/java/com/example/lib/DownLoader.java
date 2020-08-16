@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +27,7 @@ public class DownLoader {
     private OkHttpClient client = new OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .retryOnConnectionFailure(false)
+            .proxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", 9999)))
             .readTimeout(20, TimeUnit.SECONDS)
             .eventListener(new EventListener() {
                 @Override
@@ -49,7 +52,7 @@ public class DownLoader {
         return requestCache;
     }
 
-    private static boolean isUrlAvailable(String extensionName) {
+    public static boolean isUrlAvailable(String extensionName) {
         if (!extensionName.equalsIgnoreCase("JPEG")
                 && !extensionName.equalsIgnoreCase("jpg")
                 && !extensionName.equalsIgnoreCase("PNG")

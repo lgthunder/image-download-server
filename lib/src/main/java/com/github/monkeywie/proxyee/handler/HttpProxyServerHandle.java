@@ -37,6 +37,7 @@ import io.netty.resolver.NoopAddressResolverGroup;
 import io.netty.util.ReferenceCountUtil;
 import test.java.com.github.monkeywie.proxyee.BreakWallFilter;
 import test.java.com.github.monkeywie.proxyee.CacheManager;
+import test.java.com.github.monkeywie.proxyee.UrlProvider;
 
 import java.net.InetSocketAddress;
 import java.net.URL;
@@ -50,6 +51,7 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
     private ChannelFuture cf;
     private String host;
     private int port;
+    private String url;
     private boolean isSsl = false;
     private int status = 0;
     private HttpProxyServerConfig serverConfig;
@@ -60,7 +62,19 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
     private List requestList;
     private boolean isConnect;
     private BreakWallFilter wallFilter = new BreakWallFilter();
-    private CacheManager cacheManager = new CacheManager();
+
+    private UrlProvider urlProvider = new UrlProvider() {
+        @Override
+        public String getUrl() {
+            return url;
+        }
+
+        @Override
+        public String getHost() {
+            return host;
+        }
+    };
+    private CacheManager cacheManager = new CacheManager(urlProvider);
 
     public HttpProxyServerConfig getServerConfig() {
         return serverConfig;
@@ -162,12 +176,19 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
 
     private void handleProxyData(Channel channel, Object msg, boolean isHttp)
             throws Exception {
+
+        if (msg instanceof HttpRequest) {
+            HttpRequest request = (HttpRequest) msg;
+            url = request.uri();
+            System.out.println(" hand channel :" + url);
+        }
+        if (cacheManager.hasCache(channel, msg, isHttp)) {
+            return;
+        }
+
         if (cf == null) {
             //connection异常 还有HttpContent进来，不转发
             if (isHttp && !(msg instanceof HttpRequest)) {
-                return;
-            }
-            if (cacheManager.hasCache(channel, msg, isHttp)) {
                 return;
             }
             ProxyHandler proxyHandler = ProxyHandleFactory.build(proxyConfig);
@@ -180,10 +201,12 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
             if (!wallFilter.isWallBlock(host)) {
                 proxyHandler = null;
             }
+
+
 //            System.out.println("host:" + host + " | proxyHandler :" + proxyHandler);
             RequestProto requestProto = new RequestProto(host, port, isSsl);
             ChannelInitializer channelInitializer =
-                    isHttp ? new HttpProxyInitializer(channel, requestProto, proxyHandler)
+                    isHttp ? new HttpProxyInitializer(channel, requestProto, proxyHandler, urlProvider)
                             : new TunnelProxyInitializer(channel, proxyHandler);
             Bootstrap bootstrap = new Bootstrap();
             bootstrap.group(serverConfig.getProxyLoopGroup()) // 注册线程池

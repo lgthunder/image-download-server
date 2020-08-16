@@ -179,7 +179,12 @@ public class ScanService extends Thread {
             list = gson.fromJson(temp.toString(), new TypeToken<ArrayList<ImgData>>() {
             }.getType());
             for (ImgData imgData : list) {
-                DownLoader.getInstance().load(file.getParentFile().getPath(), imgData.url);
+                if(imgData.count<5){
+                    DownLoader.getInstance().load(file.getParentFile().getPath(), imgData.url);
+                }else{
+                    Log.log("WARNING  reload count > 5 times");
+                }
+
             }
         }
     }

@@ -1,5 +1,8 @@
 package test.java.com.github.monkeywie.proxyee;
 
+import com.example.lib.ChatServer;
+import com.example.lib.LogCacheServer;
+import com.example.lib.ScanService;
 import com.github.monkeywie.proxyee.exception.HttpProxyExceptionHandle;
 import com.github.monkeywie.proxyee.intercept.HttpProxyIntercept;
 import com.github.monkeywie.proxyee.intercept.HttpProxyInterceptInitializer;
@@ -10,6 +13,8 @@ import com.github.monkeywie.proxyee.proxy.ProxyType;
 import com.github.monkeywie.proxyee.server.HttpProxyServer;
 import com.github.monkeywie.proxyee.server.HttpProxyServerConfig;
 
+import java.net.UnknownHostException;
+
 import io.netty.channel.Channel;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
@@ -17,6 +22,7 @@ import io.netty.handler.codec.http.HttpResponse;
 public class InterceptHttpProxyServer {
 
     public static void main(String[] args) throws Exception {
+//        downLoadServer();
         HttpProxyServerConfig config = new HttpProxyServerConfig();
         ProxyConfig proxyConfig =new ProxyConfig(ProxyType.HTTP,"127.0.0.1",1080);
 //        ProxyConfig proxyConfig =new ProxyConfig(ProxyType.HTTP,"hk.01.muii.xyz",650);
@@ -73,5 +79,21 @@ public class InterceptHttpProxyServer {
                     }
                 })
                 .start(9999);
+
+
+    }
+
+
+    public static void downLoadServer() throws UnknownHostException {
+        ScanService.scanService.start();
+        LogCacheServer.getInstance().start();
+        int port = 8887; // 843 flash policy port
+        try {
+//            port = Integer.parseInt(args[0]);
+        } catch (Exception ex) {
+        }
+        ChatServer s = new ChatServer(port);
+        s.start();
+        System.out.println("ChatServer started on port: " + s.getPort());
     }
 }
