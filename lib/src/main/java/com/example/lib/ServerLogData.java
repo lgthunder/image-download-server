@@ -31,11 +31,12 @@ public class ServerLogData implements Serializable {
     private ServerLogData next;
 
     private static ServerLogData sPool;
-    private final static int MAX_POOL_SIZE = 12;
+    private final static int MAX_POOL_SIZE = 52;
     private static int sPoolSize = 0;
     private static final Object sPoolSync = new Object();
 
     static AtomicInteger cont = new AtomicInteger(0);
+    static AtomicInteger obtainCount = new AtomicInteger(0);
 
     private ServerLogData() {
         cont.getAndIncrement();
@@ -97,6 +98,7 @@ public class ServerLogData implements Serializable {
 
 
     public static ServerLogData obtain() {
+        obtainCount.getAndIncrement();
         synchronized (sPoolSync) {
             if (sPool != null) {
                 ServerLogData data = sPool;
@@ -104,7 +106,7 @@ public class ServerLogData implements Serializable {
                 data.next = null;
                 data.flag = FLAG_OUT_POOL;
                 sPoolSize--;
-                return data;
+                return currentData(data);
             }
         }
         return currentData(new ServerLogData());

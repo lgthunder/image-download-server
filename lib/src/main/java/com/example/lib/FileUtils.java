@@ -12,11 +12,15 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 public final class FileUtils {
@@ -89,6 +93,33 @@ public final class FileUtils {
         }
     }
 
+    public static  List<String> readFile(InputStream  inputStream) {
+
+        List<String> fileContent = new LinkedList<>();
+
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new InputStreamReader(inputStream));
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+//                if (!fileContent.toString().equals("")) {
+//                    fileContent.append("\r\n");
+//                }
+                fileContent.add(line);
+            }
+            return fileContent;
+        } catch (IOException e) {
+            return null;
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
+        }
+    }
 
     public static double copyFile(String sourceFile, String targetFile) {
         return copyFile(new File(sourceFile), new File(targetFile));

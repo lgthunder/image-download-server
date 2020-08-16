@@ -10,7 +10,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class LogCacheServer extends Thread {
-    private int MAX_COUNT = 300;
+    private int MAX_COUNT = 50;
     private List<ServerLogData> writeBuffOne = new ArrayList<>(MAX_COUNT);
     private List<ServerLogData> writeBuffTwo = new ArrayList<>(MAX_COUNT);
     private List<ServerLogData> writeBuffThree = new ArrayList<>(MAX_COUNT);
@@ -52,11 +52,12 @@ public class LogCacheServer extends Thread {
                 lock.lock();
                 try {
                     cache.put(data);
-                    if (cache.size() > MAX_COUNT * 3) {
+                    if (cache.size() > MAX_COUNT) {
                         cache.take();
                     }
                     for (LinkedBlockingQueue<ServerLogData> queue : cacheList) {
                         queue.put(data);
+                        //todo
                     }
                 } finally {
                     lock.unlock();
@@ -69,11 +70,17 @@ public class LogCacheServer extends Thread {
     }
 
     public void writeLog() {
+        Log.log("write log to disk ServerLogData count :" + ServerLogData.cont.intValue()+"|"+ServerLogData.obtainCount.intValue());
+        final String content = new Gson().toJson(currentWrite);
+        for (ServerLogData data : currentWrite) {
+            data.recycle();
+        }
+        currentWrite.clear();
         MessageExecutor.executorService.execute(new Runnable() {
             @Override
             public void run() {
-                Log.log("write log to disk");
-                FileUtils.writeFile(FileUtils.DIR + File.separator + System.currentTimeMillis() + ".log", new Gson().toJson(currentWrite), false);
+                FileUtils.writeFile(FileUtils.DIR + File.separator + System.currentTimeMillis() + ".log", content, false);
+
             }
         });
     }
