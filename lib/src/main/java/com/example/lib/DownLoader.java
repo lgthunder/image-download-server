@@ -6,7 +6,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.Proxy;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -16,6 +20,7 @@ import okhttp3.EventListener;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import test.java.com.github.monkeywie.proxyee.CacheManager;
 
 public class DownLoader {
     static DownLoader INSTANCE = new DownLoader();
@@ -69,9 +74,32 @@ public class DownLoader {
         return client;
     }
 
+
+//    public void load(final String savePath, final String url) {
+//        try {
+//            if (loadFromDisk(savePath, url)) {
+//                return;
+//            }
+//        } catch (MalformedURLException e) {
+//            e.printStackTrace();
+//        }
+//        loadFromRemote(savePath, url);
+//    }
+
+    private boolean loadFromDisk(String desPath, String url) throws MalformedURLException {
+        URL toUrl = new URL(url);
+        File file = new File(CacheManager.getSavePath(toUrl.getHost(), toUrl.getPath()), CacheManager.getName(toUrl.getPath()));
+        if (!file.exists()) return false;
+        if (FileUtils.copyFile(file.getPath(), desPath) > 0) {
+            return true;
+        }
+        return false;
+    }
+
     public void load(final String savePath, final String url) {
 //        String savePath ="E:\\webdownload";
 //        String url ="https://www.privacypic.com/images/2020/07/31/GCiUsk.jpg";
+
         String extensionName = url.substring(url.lastIndexOf(".") + 1);
         if (!isUrlAvailable(extensionName)) {
             return;
@@ -88,6 +116,14 @@ public class DownLoader {
         if (file.exists()) {
             FileUtils.delete(reloadPath, url);
             return;
+        }
+
+        try {
+            if (loadFromDisk(file.getPath(), url)) {
+                return;
+            }
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
         }
         final File tempFile = new File(sf.getPath() + File.separator + tempFileName);
         //todo tempfile

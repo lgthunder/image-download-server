@@ -10,7 +10,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class LogCacheServer extends Thread {
-    private int MAX_COUNT = 50;
+    private int MAX_COUNT = 300;
     private List<ServerLogData> writeBuffOne = new ArrayList<>(MAX_COUNT);
     private List<ServerLogData> writeBuffTwo = new ArrayList<>(MAX_COUNT);
     private List<ServerLogData> writeBuffThree = new ArrayList<>(MAX_COUNT);
@@ -52,7 +52,7 @@ public class LogCacheServer extends Thread {
                 lock.lock();
                 try {
                     cache.put(data);
-                    if (cache.size() > MAX_COUNT) {
+                    if (cache.size() > MAX_COUNT * 2) {
                         cache.take();
                     }
                     for (LinkedBlockingQueue<ServerLogData> queue : cacheList) {
@@ -70,7 +70,7 @@ public class LogCacheServer extends Thread {
     }
 
     public void writeLog() {
-        Log.log("write log to disk ServerLogData count :" + ServerLogData.cont.intValue()+"|"+ServerLogData.obtainCount.intValue());
+        Log.log("write log to disk ServerLogData count :" + ServerLogData.cont.intValue() + "|" + ServerLogData.obtainCount.intValue());
         final String content = new Gson().toJson(currentWrite);
         for (ServerLogData data : currentWrite) {
             data.recycle();
