@@ -2,6 +2,7 @@ package test.java.com.github.monkeywie.proxyee;
 
 import com.example.lib.DownLoader;
 import com.example.lib.FileUtils;
+import com.example.lib.Log;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,7 +32,7 @@ import io.netty.handler.stream.ChunkedFile;
 public class CacheManager {
 
     private static final String CR = System.getProperty("line.separator");
-    private boolean isCacheOpen = true;
+    public static boolean isCacheOpen = true;
 
     String contentType;
 
@@ -55,7 +56,8 @@ public class CacheManager {
 //                System.out.println(" GET | host: " + url.getUrl().getHost() + " path: " + url.getUrl().getPath());
 //                System.out.println(" GET  REQUEST :" + request.toString());
                 try {
-                    File file = new File(getSavePath(url.getUrl().getHost(), url.getUrl().getPath()), getName(url.getUrl().getPath()));
+//                    File file = new File(getSavePath(url.getUrl().getHost(), url.getUrl().getPath()), getName(url.getUrl().getPath()));
+                    File file = new File(FileUtils.DIR + File.separator + "test.jpg");
                     if (!file.exists()) {
                         return false;
                     }
@@ -63,7 +65,7 @@ public class CacheManager {
                     if (!DownLoader.isUrlAvailable(extensionName)) {
                         return false;
                     }
-                    System.out.println("  GET | get url :"+url.getUrl().toString()+"  from path : " + file.getPath());
+                    Log.log("  GET CACHE:" + isCacheOpen + "| get url :" + url.getUrl().toString() + "  from path : " + file.getPath());
                     DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_0, HttpResponseStatus.OK);
                     response.headers().add("Content-Type", "image/" + getExtensionName(url.getUrl().getPath()));
                     response.headers().add("Content-Length", file.length());
@@ -155,7 +157,7 @@ public class CacheManager {
                 }
                 list.clear();
                 os.close();
-                System.out.println("  RESPONSE | save url :"+url.getUrl().toString()+"  to path : " + file.getPath());
+                Log.log("  RESPONSE | save url :" + url.getUrl().toString() + "  to path : " + file.getPath());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -208,5 +210,6 @@ public class CacheManager {
             ctx.write(new ChunkedFile(raf));
         }
         ctx.writeAndFlush("\n");
+        raf.close();
     }
 }

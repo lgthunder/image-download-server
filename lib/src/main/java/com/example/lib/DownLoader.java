@@ -17,9 +17,11 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.EventListener;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.internal.http.HttpHeaders;
 import test.java.com.github.monkeywie.proxyee.CacheManager;
 
 public class DownLoader {
@@ -28,6 +30,22 @@ public class DownLoader {
     public static DownLoader getInstance() {
         return INSTANCE;
     }
+
+    public Interceptor interceptor = new Interceptor() {
+        @Override
+        public Response intercept(Chain chain) throws IOException {
+            Request request = chain.request();
+            Response response = chain.proceed(request);
+            String location = response.headers().get("location");
+            if (location != null && location.length() != 0) {
+//                if (loadFromDisk("", location)) {
+//                    response = new Response.Builder().code(200).build();
+//                    return response;
+//                }
+            }
+            return response;
+        }
+    };
 
     private OkHttpClient client = new OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)

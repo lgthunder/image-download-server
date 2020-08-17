@@ -12,6 +12,12 @@ import com.github.monkeywie.proxyee.server.HttpProxyServerConfig;
 import com.github.monkeywie.proxyee.util.ProtoUtil;
 import com.github.monkeywie.proxyee.util.ProtoUtil.RequestProto;
 
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.LinkedList;
+import java.util.List;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -30,7 +36,6 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.proxy.ProxyHandler;
-import io.netty.handler.proxy.Socks5ProxyHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.resolver.NoopAddressResolverGroup;
@@ -39,15 +44,6 @@ import test.java.com.github.monkeywie.proxyee.BreakWallFilter;
 import test.java.com.github.monkeywie.proxyee.CacheManager;
 import test.java.com.github.monkeywie.proxyee.UrlProvider;
 
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Dictionary;
-import java.util.LinkedList;
-import java.util.List;
-
-import static jdk.nashorn.internal.objects.NativeFunction.bind;
-
 public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
 
     private ChannelFuture cf;
@@ -55,6 +51,7 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
     private int port;
     private String redirectHost;
     private String redirect = "-@ewe@-";
+    private boolean handleRedirect = false;
     private String url;
     private boolean isSsl = false;
     private int status = 0;
@@ -187,7 +184,7 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
             HttpRequest request = (HttpRequest) msg;
             url = request.uri();
             String[] s = url.split(redirect);
-            if (s.length > 1) {
+            if (s.length > 1 && handleRedirect) {
                 request.setUri(s[0]);
                 url = s[0];
                 redirectHost = s[1];
@@ -278,7 +275,7 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
                     public void afterResponse(Channel clientChannel, Channel proxyChannel,
                                               HttpResponse httpResponse, HttpProxyInterceptPipeline pipeline) throws Exception {
                         String location = httpResponse.headers().get(HttpHeaderNames.LOCATION, "");
-                        if (location.length() != 0) {
+                        if (location.length() != 0 && handleRedirect) {
                             location = location + redirect + pipeline.getHttpRequest().headers().get(HttpHeaderNames.HOST);
                             httpResponse.headers().set(HttpHeaderNames.LOCATION, location);
                         }

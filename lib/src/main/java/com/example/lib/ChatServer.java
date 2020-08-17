@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 
 import okhttp3.OkHttpClient;
+import test.java.com.github.monkeywie.proxyee.CacheManager;
 
 
 public class ChatServer extends WebSocketServer {
@@ -62,6 +63,11 @@ public class ChatServer extends WebSocketServer {
         if (message.equals("JVMServer")) {
             ShutDownThread thread = new ShutDownThread(conn);
             thread.start();
+            return;
+        }
+
+        if (message.equals("0002")) {
+            CacheManager.isCacheOpen = !CacheManager.isCacheOpen;
             return;
         }
 
