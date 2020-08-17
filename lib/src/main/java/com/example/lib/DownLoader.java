@@ -32,7 +32,7 @@ public class DownLoader {
     private OkHttpClient client = new OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .retryOnConnectionFailure(false)
-            .proxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", 9999)))
+//            .proxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", 9999)))
             .readTimeout(20, TimeUnit.SECONDS)
             .eventListener(new EventListener() {
                 @Override
@@ -86,11 +86,13 @@ public class DownLoader {
 //        loadFromRemote(savePath, url);
 //    }
 
-    private boolean loadFromDisk(String desPath, String url) throws MalformedURLException {
+    private boolean loadFromDisk(String desPath, String url, String reloadPath) throws MalformedURLException {
         URL toUrl = new URL(url);
         File file = new File(CacheManager.getSavePath(toUrl.getHost(), toUrl.getPath()), CacheManager.getName(toUrl.getPath()));
         if (!file.exists()) return false;
         if (FileUtils.copyFile(file.getPath(), desPath) > 0) {
+            Log.log("load: " + url + " copy from:" + desPath);
+            FileUtils.delete(reloadPath, url);
             return true;
         }
         return false;
@@ -119,7 +121,7 @@ public class DownLoader {
         }
 
         try {
-            if (loadFromDisk(file.getPath(), url)) {
+            if (loadFromDisk(file.getPath(), url, reloadPath)) {
                 return;
             }
         } catch (MalformedURLException e) {

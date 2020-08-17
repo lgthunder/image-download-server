@@ -211,8 +211,14 @@ public final class FileUtils {
         List<ImgData> list = new ArrayList<>();
         StringBuilder temp = readFile(reloadPath);
         if (temp != null) {
-            list = gson.fromJson(temp.toString(), new TypeToken<ArrayList<ImgData>>() {
-            }.getType());
+            try {
+                list = gson.fromJson(temp.toString(), new TypeToken<ArrayList<ImgData>>() {
+                }.getType());
+            }catch (Exception e){
+                Log.logS("addOrUpdate file : "+file);
+                e.printStackTrace();
+            }
+
         } else {
             list = new ArrayList<>();
         }

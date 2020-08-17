@@ -42,6 +42,7 @@ import test.java.com.github.monkeywie.proxyee.UrlProvider;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Dictionary;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -52,6 +53,8 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
     private ChannelFuture cf;
     private String host;
     private int port;
+    private String redirectHost;
+    private String redirect = "-@ewe@-";
     private String url;
     private boolean isSsl = false;
     private int status = 0;
@@ -70,7 +73,7 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
         public URL getUrl() {
             URL surl = null;
             try {
-                surl = new URL("http://" + host + url);
+                surl = new URL("http://" + redirectHost + url);
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             }
@@ -183,6 +186,15 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
         if (msg instanceof HttpRequest) {
             HttpRequest request = (HttpRequest) msg;
             url = request.uri();
+            String[] s = url.split(redirect);
+            if (s.length > 1) {
+                request.setUri(s[0]);
+                url = s[0];
+                redirectHost = s[1];
+            } else {
+                redirectHost = host;
+
+            }
         }
         if (cacheManager.hasCache(channel, msg, isHttp)) {
             return;
@@ -265,6 +277,11 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
                     @Override
                     public void afterResponse(Channel clientChannel, Channel proxyChannel,
                                               HttpResponse httpResponse, HttpProxyInterceptPipeline pipeline) throws Exception {
+                        String location = httpResponse.headers().get(HttpHeaderNames.LOCATION, "");
+                        if (location.length() != 0) {
+                            location = location + redirect + pipeline.getHttpRequest().headers().get(HttpHeaderNames.HOST);
+                            httpResponse.headers().set(HttpHeaderNames.LOCATION, location);
+                        }
                         clientChannel.writeAndFlush(httpResponse);
                         if (HttpHeaderValues.WEBSOCKET.toString()
                                 .equals(httpResponse.headers().get(HttpHeaderNames.UPGRADE))) {

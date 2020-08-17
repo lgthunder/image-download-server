@@ -48,10 +48,11 @@ public class CacheManager {
 //        System.out.println(msg.getClass());
 //        System.out.println(msg.toString());
         if (!isCacheOpen) return false;
+
         if (msg instanceof DefaultHttpRequest) {
             DefaultHttpRequest request = (DefaultHttpRequest) msg;
             if (request.method() == HttpMethod.GET) {
-                System.out.println(" GET | host: " + url.getUrl().getHost() + " path: " + url.getUrl().getPath());
+//                System.out.println(" GET | host: " + url.getUrl().getHost() + " path: " + url.getUrl().getPath());
 //                System.out.println(" GET  REQUEST :" + request.toString());
                 try {
                     File file = new File(getSavePath(url.getUrl().getHost(), url.getUrl().getPath()), getName(url.getUrl().getPath()));
@@ -62,6 +63,7 @@ public class CacheManager {
                     if (!DownLoader.isUrlAvailable(extensionName)) {
                         return false;
                     }
+                    System.out.println("  GET | get url :"+url.getUrl().toString()+"  from path : " + file.getPath());
                     DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_0, HttpResponseStatus.OK);
                     response.headers().add("Content-Type", "image/" + getExtensionName(url.getUrl().getPath()));
                     response.headers().add("Content-Length", file.length());
@@ -153,7 +155,7 @@ public class CacheManager {
                 }
                 list.clear();
                 os.close();
-                System.out.println("  RESPONSE | save " + file.getAbsolutePath());
+                System.out.println("  RESPONSE | save url :"+url.getUrl().toString()+"  to path : " + file.getPath());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -167,7 +169,7 @@ public class CacheManager {
 
 
         String path = url.substring(0, url.lastIndexOf("/"));
-        return FileUtils.DIR + "_cache" + File.separator + FileUtils.stringToMD5(host) + File.separator + URLEncoder.encode(path);
+        return FileUtils.DIR + "_cache" + File.separator + host + File.separator + URLEncoder.encode(path);
     }
 
     public static String getName(String url) {

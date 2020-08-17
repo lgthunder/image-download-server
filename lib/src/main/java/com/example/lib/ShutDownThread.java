@@ -39,7 +39,7 @@ public class ShutDownThread extends Thread {
                 if (data.equals(ServerLogData.emptyData())) {
                     flag = false;
                 }
-                Thread.sleep(500);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -112,7 +112,7 @@ public class ShutDownThread extends Thread {
 //        System.out.println("Init:" + mxb.getNonHeapMemoryUsage().getInit() / 1024 / 1024 + "MB");  //Init:2MB
 //        System.out.println("Committed:" + mxb.getNonHeapMemoryUsage().getCommitted() / 1024 / 1024 + "MB");   //Committed:8MB
 //        System.out.println("Used:" + mxb.getNonHeapMemoryUsage().getUsed() / 1024 / 1024 + "MB");  //Used:7MB
-        System.out.println(mxb.getNonHeapMemoryUsage().toString());    //init = 2555904(2496K) used = 7802056(7619K) committed = 9109504(8896K) max = -1(-1K)
+//        System.out.println(mxb.getNonHeapMemoryUsage().toString());    //init = 2555904(2496K) used = 7802056(7619K) committed = 9109504(8896K) max = -1(-1K)
         data.setMaxNoHeap(mxb.getNonHeapMemoryUsage().getMax() / 1024 / 1024 + "MB");
         data.setInitNoHeap(mxb.getNonHeapMemoryUsage().getInit() / 1024 / 1024 + "MB");
         data.setCommittedNoHeap(mxb.getNonHeapMemoryUsage().getCommitted() / 1024 / 1024 + "MB");
