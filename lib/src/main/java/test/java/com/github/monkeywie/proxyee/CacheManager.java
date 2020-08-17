@@ -25,6 +25,8 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.stream.ChunkedFile;
 
 public class CacheManager {
 
@@ -49,28 +51,29 @@ public class CacheManager {
         if (msg instanceof DefaultHttpRequest) {
             DefaultHttpRequest request = (DefaultHttpRequest) msg;
             if (request.method() == HttpMethod.GET) {
-                System.out.println(" GET :" + request.uri());
+                System.out.println(" GET | host: " + url.getUrl().getHost() + " path: " + url.getUrl().getPath());
 //                System.out.println(" GET  REQUEST :" + request.toString());
                 try {
-                    File file = new File(getSavePath(url.getHost(), url.getUrl()), getName(url.getUrl()));
+                    File file = new File(getSavePath(url.getUrl().getHost(), url.getUrl().getPath()), getName(url.getUrl().getPath()));
                     if (!file.exists()) {
                         return false;
                     }
-                    String extensionName = getExtensionName(url.getUrl());
+                    String extensionName = getExtensionName(url.getUrl().getPath());
                     if (!DownLoader.isUrlAvailable(extensionName)) {
                         return false;
                     }
                     DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_0, HttpResponseStatus.OK);
-                    response.headers().add("Content-Type", "image/" + getExtensionName(url.getUrl()));
+                    response.headers().add("Content-Type", "image/" + getExtensionName(url.getUrl().getPath()));
                     response.headers().add("Content-Length", file.length());
                     response.headers().add("Cache-From-Local", "Local");
                     ctx.write(response);
-                    RandomAccessFile randomAccessFile = new RandomAccessFile(file.getPath(), "r");
-                    FileRegion region = new DefaultFileRegion(randomAccessFile.getChannel(), 0, randomAccessFile.length());
-                    ctx.write(region);
-                    ctx.writeAndFlush(CR);
-                    randomAccessFile.close();
-                    return false;
+                    writeFile(ctx, file.getPath());
+//                    RandomAccessFile randomAccessFile = new RandomAccessFile(file.getPath(), "r");
+//                    FileRegion region = new DefaultFileRegion(randomAccessFile.getChannel(), 0, randomAccessFile.length());
+//                    ctx.write(region);
+//                    ctx.writeAndFlush(CR);
+//                    randomAccessFile.close();
+                    return true;
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
@@ -106,7 +109,7 @@ public class CacheManager {
 
         }
 
-        if (contentLength < 1024 * 15) {
+        if (contentLength < 1024 * 20) {
             return;
         }
         if (contentType == null || contentType.length() == 0) {
@@ -133,10 +136,9 @@ public class CacheManager {
         }
 
         if (msg instanceof LastHttpContent) {
-            System.out.println(" GET RESPONSE_CONTENT :" + contentLength);
             LastHttpContent response = (LastHttpContent) msg;
 
-            File file = new File(getSavePath(url.getHost(), url.getUrl()), getName(url.getUrl()));
+            File file = new File(getSavePath(url.getUrl().getHost(), url.getUrl().getPath()), getName(url.getUrl().getPath()));
             if (!file.getParentFile().exists()) {
                 file.getParentFile().mkdirs();
             }
@@ -151,6 +153,7 @@ public class CacheManager {
                 }
                 list.clear();
                 os.close();
+                System.out.println("  RESPONSE | save " + file.getAbsolutePath());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -161,6 +164,7 @@ public class CacheManager {
     }
 
     public static String getSavePath(String host, String url) {
+
 
         String path = url.substring(0, url.lastIndexOf("/"));
         return FileUtils.DIR + "_cache" + File.separator + FileUtils.stringToMD5(host) + File.separator + URLEncoder.encode(path);
@@ -176,5 +180,31 @@ public class CacheManager {
 
     public static String getExtensionName(String url) {
         return url.substring(url.lastIndexOf(".") + 1);
+    }
+
+    public void writeFile(Channel ctx, String path) throws IOException {
+        RandomAccessFile raf = null;
+        long length = -1;
+        try {
+            raf = new RandomAccessFile(path, "r");
+            length = raf.length();
+        } catch (Exception e) {
+            ctx.writeAndFlush("ERR: " + e.getClass().getSimpleName() + ": " + e.getMessage() + '\n');
+            return;
+        } finally {
+            if (length < 0 && raf != null) {
+                raf.close();
+            }
+        }
+
+        ctx.write("OK: " + raf.length() + '\n');
+        if (ctx.pipeline().get(SslHandler.class) == null) {
+            // SSL not enabled - can use zero-copy file transfer.
+            ctx.write(new DefaultFileRegion(raf.getChannel(), 0, length));
+        } else {
+            // SSL enabled - cannot use zero-copy file transfer.
+            ctx.write(new ChunkedFile(raf));
+        }
+        ctx.writeAndFlush("\n");
     }
 }

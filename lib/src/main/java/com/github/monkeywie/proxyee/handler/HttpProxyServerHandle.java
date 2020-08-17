@@ -40,6 +40,7 @@ import test.java.com.github.monkeywie.proxyee.CacheManager;
 import test.java.com.github.monkeywie.proxyee.UrlProvider;
 
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
@@ -64,14 +65,16 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
     private BreakWallFilter wallFilter = new BreakWallFilter();
 
     private UrlProvider urlProvider = new UrlProvider() {
-        @Override
-        public String getUrl() {
-            return url;
-        }
 
         @Override
-        public String getHost() {
-            return host;
+        public URL getUrl() {
+            URL surl = null;
+            try {
+                surl = new URL("http://" + host + url);
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
+            return surl;
         }
     };
     private CacheManager cacheManager = new CacheManager(urlProvider);
@@ -180,7 +183,6 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
         if (msg instanceof HttpRequest) {
             HttpRequest request = (HttpRequest) msg;
             url = request.uri();
-            System.out.println(" hand channel :" + url);
         }
         if (cacheManager.hasCache(channel, msg, isHttp)) {
             return;

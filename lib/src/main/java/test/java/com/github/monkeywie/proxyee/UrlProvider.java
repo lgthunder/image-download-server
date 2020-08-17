@@ -1,6 +1,7 @@
 package test.java.com.github.monkeywie.proxyee;
 
+import java.net.URL;
+
 public interface UrlProvider {
-    String getUrl();
-    String getHost();
+    URL getUrl();
 }
