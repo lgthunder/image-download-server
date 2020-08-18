@@ -16,6 +16,7 @@ import com.github.monkeywie.proxyee.server.HttpProxyServerConfig;
 import java.net.UnknownHostException;
 
 import io.netty.channel.Channel;
+import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 
@@ -24,7 +25,7 @@ public class InterceptHttpProxyServer {
     public static void main(String[] args) throws Exception {
         downLoadServer();
         HttpProxyServerConfig config = new HttpProxyServerConfig();
-        ProxyConfig proxyConfig =new ProxyConfig(ProxyType.HTTP,"127.0.0.1",1080);
+        ProxyConfig proxyConfig = new ProxyConfig(ProxyType.HTTP, "127.0.0.1", 1080);
 //        ProxyConfig proxyConfig =new ProxyConfig(ProxyType.HTTP,"hk.01.muii.xyz",650);
 //        proxyConfig.setPwd("110120asd");
 //        proxyConfig.setUser("6062");
@@ -37,7 +38,7 @@ public class InterceptHttpProxyServer {
                     @Override
                     public void init(HttpProxyInterceptPipeline pipeline) {
                         pipeline.addLast(new CertDownIntercept());  //处理证书下载
-                        pipeline.addFirst(new HttpProxyIntercept(){
+                        pipeline.addFirst(new HttpProxyIntercept() {
 
                         });
                         pipeline.addLast(new HttpProxyIntercept() {
@@ -64,6 +65,9 @@ public class InterceptHttpProxyServer {
                                 pipeline.afterResponse(clientChannel, proxyChannel, httpResponse);
                             }
                         });
+//                        pipeline.addLast(new ImageRequestHandle());
+
+
                     }
                 })
                 .httpProxyExceptionHandle(new HttpProxyExceptionHandle() {

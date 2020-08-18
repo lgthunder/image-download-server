@@ -36,25 +36,20 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.proxy.ProxyHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.resolver.NoopAddressResolverGroup;
 import io.netty.util.ReferenceCountUtil;
 import test.java.com.github.monkeywie.proxyee.BreakWallFilter;
-import test.java.com.github.monkeywie.proxyee.CacheManager;
-import test.java.com.github.monkeywie.proxyee.UrlProvider;
+import test.java.com.github.monkeywie.proxyee.RedirectHandle;
 
 public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
 
     private ChannelFuture cf;
     private String host;
     private int port;
-    private String redirectHost;
-    private String redirect = "-@ewe@-";
-    private boolean handleRedirect = true;
-    private String url;
+
     private boolean isSsl = false;
     private int status = 0;
     private HttpProxyServerConfig serverConfig;
@@ -66,20 +61,6 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
     private boolean isConnect;
     private BreakWallFilter wallFilter = new BreakWallFilter();
 
-    private UrlProvider urlProvider = new UrlProvider() {
-
-        @Override
-        public URL getUrl() {
-            URL surl = null;
-            try {
-                surl = new URL("http://" + redirectHost + url);
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            }
-            return surl;
-        }
-    };
-    private CacheManager cacheManager = new CacheManager(urlProvider);
 
     public HttpProxyServerConfig getServerConfig() {
         return serverConfig;
@@ -183,23 +164,6 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
     private void handleProxyData(Channel channel, Object msg, boolean isHttp)
             throws Exception {
 
-        if (msg instanceof HttpRequest) {
-            HttpRequest request = (HttpRequest) msg;
-            url = request.uri();
-            String[] s = url.split(redirect);
-            if (s.length > 1 && handleRedirect) {
-                request.setUri(s[0]);
-                url = s[0];
-                redirectHost = s[1];
-            } else {
-                redirectHost = host;
-
-            }
-        }
-        if (cacheManager.hasCache(channel, msg, isHttp)) {
-            return;
-        }
-
         if (cf == null) {
             //connection异常 还有HttpContent进来，不转发
             if (isHttp && !(msg instanceof HttpRequest)) {
@@ -220,7 +184,7 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
 //            System.out.println("host:" + host + " | proxyHandler :" + proxyHandler);
             RequestProto requestProto = new RequestProto(host, port, isSsl);
             ChannelInitializer channelInitializer =
-                    isHttp ? new HttpProxyInitializer(channel, requestProto, proxyHandler, urlProvider)
+                    isHttp ? new HttpProxyInitializer(channel, requestProto, proxyHandler)
                             : new TunnelProxyInitializer(channel, proxyHandler);
             Bootstrap bootstrap = new Bootstrap();
             bootstrap.group(serverConfig.getProxyLoopGroup()) // 注册线程池
@@ -278,8 +242,8 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
                     public void afterResponse(Channel clientChannel, Channel proxyChannel,
                                               HttpResponse httpResponse, HttpProxyInterceptPipeline pipeline) throws Exception {
                         String location = httpResponse.headers().get(HttpHeaderNames.LOCATION, "");
-                        if (location.length() != 0 && handleRedirect) {
-                            location = location + redirect + pipeline.getHttpRequest().headers().get(HttpHeaderNames.HOST);
+                        if (location.length() != 0 && RedirectHandle.handleRedirect) {
+                            location = location + RedirectHandle.REDIRECT + pipeline.getHttpRequest().headers().get(HttpHeaderNames.HOST);
                             httpResponse.headers().set(HttpHeaderNames.LOCATION, location);
                         }
                         clientChannel.writeAndFlush(httpResponse);
