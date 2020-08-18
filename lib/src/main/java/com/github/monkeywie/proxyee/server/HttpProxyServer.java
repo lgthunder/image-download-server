@@ -136,7 +136,7 @@ public class HttpProxyServer {
 //                                    ,new StringDecoder(CharsetUtil.UTF_8)
                             );
                             // ssl file write
-//                            ch.pipeline().addLast(new ChunkedWriteHandler());
+                            ch.pipeline().addLast(new ChunkedWriteHandler());
                             ch.pipeline().addLast("httpCodec", new HttpServerCodec());
                             ch.pipeline().addLast("serverHandle",
                                     new HttpProxyServerHandle(serverConfig, proxyInterceptInitializer, proxyConfig,

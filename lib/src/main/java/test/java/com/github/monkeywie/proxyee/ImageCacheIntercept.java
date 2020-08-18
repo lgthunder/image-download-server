@@ -51,19 +51,19 @@ public abstract class ImageCacheIntercept extends HttpProxyIntercept {
     @Override
     public void beforeRequest(Channel clientChannel, HttpContent httpContent, HttpProxyInterceptPipeline pipeline) throws Exception {
         super.beforeRequest(clientChannel, httpContent, pipeline);
-        Log.log("beforeRequest  httpContent " + host + url_);
+//        Log.log("beforeRequest  httpContent " + host + url_);
     }
 
     @Override
     public void afterResponse(Channel clientChannel, Channel proxyChannel, HttpContent httpContent, HttpProxyInterceptPipeline pipeline) throws Exception {
         super.afterResponse(clientChannel, proxyChannel, httpContent, pipeline);
-        Log.log("afterResponse  httpContent" + host + url_);
+//        Log.log("afterResponse  httpContent" + host + url_);
     }
 
     @Override
     public void afterResponse(Channel clientChannel, Channel proxyChannel, HttpResponse httpResponse, HttpProxyInterceptPipeline pipeline) throws Exception {
         super.afterResponse(clientChannel, proxyChannel, httpResponse, pipeline);
-        Log.log("afterResponse  httpResponse" + host + url_);
+//        Log.log("afterResponse  httpResponse" + host + url_);
     }
 
 }

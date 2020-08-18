@@ -11,7 +11,7 @@ public class HttpProxyIntercept {
      * 拦截代理服务器到目标服务器的请求头
      */
     public void beforeRequest(Channel clientChannel, HttpRequest httpRequest, HttpProxyInterceptPipeline pipeline) throws Exception {
-
+        pipeline.beforeRequest(clientChannel, httpRequest);
     }
 
     /**
