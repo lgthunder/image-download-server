@@ -16,6 +16,7 @@ import java.util.List;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.DefaultFileRegion;
 import io.netty.channel.FileRegion;
@@ -28,6 +29,9 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
+import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
 public class CacheManager {
 
@@ -56,8 +60,8 @@ public class CacheManager {
 //                System.out.println(" GET | host: " + url.getUrl().getHost() + " path: " + url.getUrl().getPath());
 //                System.out.println(" GET  REQUEST :" + request.toString());
                 try {
-//                    File file = new File(getSavePath(url.getUrl().getHost(), url.getUrl().getPath()), getName(url.getUrl().getPath()));
-                    File file = new File(FileUtils.DIR + File.separator + "test.jpg");
+                    File file = new File(getSavePath(url.getUrl().getHost(), url.getUrl().getPath()), getName(url.getUrl().getPath()));
+//                    File file = new File(FileUtils.DIR + File.separator + "test.jpg");
                     if (!file.exists()) {
                         return false;
                     }
@@ -71,16 +75,25 @@ public class CacheManager {
                     response.headers().add("Content-Length", file.length());
                     response.headers().add("Cache-From-Local", "Local");
                     ctx.write(response);
-                    writeFile(ctx, file.getPath());
+                    DownLoadExecutor.executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                writeFile(ctx, file.getPath());
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+
 //                    RandomAccessFile randomAccessFile = new RandomAccessFile(file.getPath(), "r");
 //                    FileRegion region = new DefaultFileRegion(randomAccessFile.getChannel(), 0, randomAccessFile.length());
 //                    ctx.write(region);
 //                    ctx.writeAndFlush(CR);
 //                    randomAccessFile.close();
+                    ReferenceCountUtil.release(msg);
                     return true;
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
 
@@ -113,8 +126,8 @@ public class CacheManager {
 
         }
 
-        if (contentLength < 1024 * 20) {
-            return;
+        if (contentLength < 1024 * 50) {
+//            return;
         }
         if (contentType == null || contentType.length() == 0) {
             return;
@@ -140,30 +153,30 @@ public class CacheManager {
         }
 
         if (msg instanceof LastHttpContent) {
-            LastHttpContent response = (LastHttpContent) msg;
 
-            File file = new File(getSavePath(url.getUrl().getHost(), url.getUrl().getPath()), getName(url.getUrl().getPath()));
-            if (!file.getParentFile().exists()) {
-                file.getParentFile().mkdirs();
-            }
-            if (file.exists()) {
-                return;
-            }
-//            System.out.println(Thread.currentThread().getName() + "|" + contentType + " : " + file.getPath());
-            try {
-                FileOutputStream os = new FileOutputStream(file.getPath());
-                for (byte[] byteBuf : list) {
-                    os.write(byteBuf);
+            DownLoadExecutor.executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    File file = new File(getSavePath(url.getUrl().getHost(), url.getUrl().getPath()), getName(url.getUrl().getPath()));
+                    if (!file.getParentFile().exists()) {
+                        file.getParentFile().mkdirs();
+                    }
+                    if (file.exists()) {
+                        return;
+                    }
+                    try {
+                        FileOutputStream os = new FileOutputStream(file.getPath());
+                        for (byte[] byteBuf : list) {
+                            os.write(byteBuf);
+                        }
+                        list.clear();
+                        os.close();
+                        Log.log("  RESPONSE | save url :" + url.getUrl().toString() + "  to path : " + file.getPath());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
-                list.clear();
-                os.close();
-                Log.log("  RESPONSE | save url :" + url.getUrl().toString() + "  to path : " + file.getPath());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-
-//            System.out.println(proxy.channel()+ "RESPONSE: " + response.content().nioBuffer(size());
+            });
         }
     }
 
@@ -202,14 +215,30 @@ public class CacheManager {
         }
 
         ctx.write("OK: " + raf.length() + '\n');
-        if (ctx.pipeline().get(SslHandler.class) == null) {
-            // SSL not enabled - can use zero-copy file transfer.
-            ctx.write(new DefaultFileRegion(raf.getChannel(), 0, length));
-        } else {
-            // SSL enabled - cannot use zero-copy file transfer.
-            ctx.write(new ChunkedFile(raf));
+        try {
+            ChannelFuture futures;
+            if (ctx.pipeline().get(SslHandler.class) == null) {
+                // SSL not enabled - can use zero-copy file transfer.
+                futures = ctx.writeAndFlush(new DefaultFileRegion(raf.getChannel(), 0, length)).await();
+            } else {
+                // SSL enabled - cannot use zero-copy file transfer.
+                futures = ctx.writeAndFlush(new ChunkedFile(raf)).await();
+            }
+//           = ctx.writeAndFlush("\n").await();
+            if (!futures.isSuccess()) {
+                Log.log("send :" + path + " failure: " + futures.cause().toString());
+            }
+            futures.addListener(new GenericFutureListener<Future<? super Void>>() {
+                @Override
+                public void operationComplete(Future<? super Void> future) throws Exception {
+                }
+            });
+            if (futures.isDone()) {
+                raf.close();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        ctx.writeAndFlush("\n");
-        raf.close();
+
     }
 }

@@ -81,6 +81,7 @@ public class DownLoader {
                 && !extensionName.equalsIgnoreCase("PNG")
                 && !extensionName.equalsIgnoreCase("GIF")
                 && !extensionName.equalsIgnoreCase("bmp")
+                && !extensionName.equalsIgnoreCase("webp")
                 && !extensionName.equalsIgnoreCase("tif")) {
             return false;
         }
@@ -109,7 +110,7 @@ public class DownLoader {
         File file = new File(CacheManager.getSavePath(toUrl.getHost(), toUrl.getPath()), CacheManager.getName(toUrl.getPath()));
         if (!file.exists()) return false;
         if (FileUtils.copyFile(file.getPath(), desPath) > 0) {
-            Log.log("load: " + url + " copy from:" + desPath);
+            Log.log("load: " + url + " copy from:" + file.getPath() + " to: " + desPath);
             FileUtils.delete(reloadPath, url);
             return true;
         }

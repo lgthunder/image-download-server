@@ -14,12 +14,17 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.util.CharsetUtil;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -125,6 +130,13 @@ public class HttpProxyServer {
 
                         @Override
                         protected void initChannel(Channel ch) throws Exception {
+                            ch.pipeline().addLast(
+//                                    new StringEncoder(CharsetUtil.UTF_8),
+//                                    new LineBasedFrameDecoder(8192)
+//                                    ,new StringDecoder(CharsetUtil.UTF_8)
+                            );
+                            // ssl file write
+                            ch.pipeline().addLast(new ChunkedWriteHandler());
                             ch.pipeline().addLast("httpCodec", new HttpServerCodec());
                             ch.pipeline().addLast("serverHandle",
                                     new HttpProxyServerHandle(serverConfig, proxyInterceptInitializer, proxyConfig,

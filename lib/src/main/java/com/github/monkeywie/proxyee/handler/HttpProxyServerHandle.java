@@ -1,5 +1,6 @@
 package com.github.monkeywie.proxyee.handler;
 
+import com.example.lib.Log;
 import com.github.monkeywie.proxyee.crt.CertPool;
 import com.github.monkeywie.proxyee.exception.HttpProxyExceptionHandle;
 import com.github.monkeywie.proxyee.intercept.HttpProxyIntercept;
@@ -35,6 +36,7 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.proxy.ProxyHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -51,7 +53,7 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
     private int port;
     private String redirectHost;
     private String redirect = "-@ewe@-";
-    private boolean handleRedirect = false;
+    private boolean handleRedirect = true;
     private String url;
     private boolean isSsl = false;
     private int status = 0;
@@ -173,6 +175,7 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
         if (cf != null) {
             cf.channel().close();
         }
+        Log.log("error: " + cause.getMessage());
         ctx.channel().close();
         exceptionHandle.beforeCatch(ctx.channel(), cause);
     }
