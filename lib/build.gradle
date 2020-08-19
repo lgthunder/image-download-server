@@ -1,4 +1,36 @@
+import java.lang.reflect.Type
+
 apply plugin: 'java-library'
+apply plugin: 'java-library'
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'java'
+
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        //5.0.0 需要gradle 5.0+ 才可构建
+        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.0'
+    }
+}
+
+shadowJar {
+    manifest {
+        //main 函数地址类
+        attributes 'Main-Class': 'test.java.com.github.monkeywie.proxyee.Main'
+    }
+    baseName = 'proxy'
+    classifier = null
+    version = 'v1.0'
+    dependencies {
+        //需要依赖的第三方lib
+//        include(dependency('commons-cli:commons-cli:1.4'))
+        //多个
+//        include(dependency('com.alibaba:fastjson:1.2.58'))
+    }
+}
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -11,3 +43,43 @@ dependencies {
 
 sourceCompatibility = "1.8"
 targetCompatibility = "1.8"
+
+compileJava {
+    sourceCompatibility = "8"
+    targetCompatibility = "8"
+}
+
+
+def outdir = 'E:\\proxy-win\\'
+//def outdir = 'build\\libs\\test\\'
+def jar_dir = "build\\libs\\" + shadowJar.baseName + "-" + shadowJar.version + ".jar "
+task copyToDir() {
+    def result = copy() {
+            //闭包参数
+        CopySpec copySpec ->
+            //from 是一个方法，指定拷贝的源文件/文件夹>file("app/build/output/apk") 是方法的参数
+            from (jar_dir)
+            //into 是一个方法：指定拷贝的目的地>拷贝到根工程的output目录下
+            into outdir
+//        into "${rootDir}/output"
+            //重命名拷贝的文件名字
+//        rename {
+//            String srcFileName ->
+//                "${srcFileName}-haha.apk"
+//        }
+            //移除不需要拷贝的内容 不拷贝 .json 结尾的文件
+//        exclude '**/*.json'
+    }
+    println("copy from: " + jar_dir + " to:" + outdir + "result: " + result.getDidWork())
+
+
+}
+
+task copyFile(type: Copy) {
+    from jar_dir
+    into (outdir)
+
+
+}
+shadowJar.finalizedBy(copyFile)
+

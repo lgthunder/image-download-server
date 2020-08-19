@@ -23,7 +23,7 @@ import io.netty.handler.codec.http.HttpResponse;
 
 public class InterceptHttpProxyServer {
 
-    public static void main(String[] args) throws Exception {
+    public static void start() throws Exception {
         configProxy();
         downLoadServer();
         HttpProxyServerConfig config = new HttpProxyServerConfig();
