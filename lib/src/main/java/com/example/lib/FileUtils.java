@@ -93,19 +93,19 @@ public final class FileUtils {
         }
     }
 
-    public static  List<String> readFile(InputStream  inputStream) {
+    public static StringBuilder readFile(InputStream inputStream) {
 
-        List<String> fileContent = new LinkedList<>();
+        StringBuilder fileContent = new StringBuilder();
 
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(new InputStreamReader(inputStream));
             String line = null;
             while ((line = reader.readLine()) != null) {
-//                if (!fileContent.toString().equals("")) {
-//                    fileContent.append("\r\n");
-//                }
-                fileContent.add(line);
+                if (!fileContent.toString().equals("")) {
+                    fileContent.append("\r\n");
+                }
+                fileContent.append(line);
             }
             return fileContent;
         } catch (IOException e) {
@@ -214,8 +214,8 @@ public final class FileUtils {
             try {
                 list = gson.fromJson(temp.toString(), new TypeToken<ArrayList<ImgData>>() {
                 }.getType());
-            }catch (Exception e){
-                Log.logS("addOrUpdate file : "+file);
+            } catch (Exception e) {
+                Log.logS("addOrUpdate file : " + file);
                 e.printStackTrace();
             }
 

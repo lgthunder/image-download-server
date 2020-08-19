@@ -1,5 +1,6 @@
 package test.java.com.github.monkeywie.proxyee;
 
+import com.example.lib.DownLoader;
 import com.example.lib.Log;
 import com.github.monkeywie.proxyee.intercept.HttpProxyInterceptPipeline;
 
@@ -91,8 +92,12 @@ public class ImageResponseHandle extends ImageCacheIntercept {
             DownLoadExecutor.executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    File file = new File(CacheManager.getSavePath(host, url_), CacheManager.getName(url_));
-                    ;
+                    String name = CacheManager.getName(url_);
+                    if (name.length() == 0) {
+                        return;
+                    }
+                    File file = new File(CacheManager.getSavePath(host, url_), name);
+
                     if (!file.getParentFile().exists()) {
                         file.getParentFile().mkdirs();
                     }

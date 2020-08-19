@@ -12,6 +12,7 @@ import com.github.monkeywie.proxyee.proxy.ProxyConfig;
 import com.github.monkeywie.proxyee.proxy.ProxyType;
 import com.github.monkeywie.proxyee.server.HttpProxyServer;
 import com.github.monkeywie.proxyee.server.HttpProxyServerConfig;
+import com.github.monkeywie.proxyee.util.BatUtil;
 
 import java.net.UnknownHostException;
 
@@ -23,6 +24,7 @@ import io.netty.handler.codec.http.HttpResponse;
 public class InterceptHttpProxyServer {
 
     public static void main(String[] args) throws Exception {
+        configProxy();
         downLoadServer();
         HttpProxyServerConfig config = new HttpProxyServerConfig();
         ProxyConfig proxyConfig = new ProxyConfig(ProxyType.HTTP, "127.0.0.1", 1080);
@@ -67,6 +69,7 @@ public class InterceptHttpProxyServer {
                         });
                         pipeline.addLast(new ImageRequestHandle());
                         pipeline.addLast(new ImageResponseHandle());
+                        pipeline.addLast(new VideoIntercept());
 
 
                     }
@@ -101,4 +104,16 @@ public class InterceptHttpProxyServer {
         s.start();
         System.out.println("ChatServer started on port: " + s.getPort());
     }
+
+    public static void configProxy() {
+        DownLoadExecutor.executor.execute(new Runnable() {
+
+            @Override
+            public void run() {
+                BatUtil.setProxy("127.0.0.1", "9999");
+            }
+        });
+
+    }
+
 }
