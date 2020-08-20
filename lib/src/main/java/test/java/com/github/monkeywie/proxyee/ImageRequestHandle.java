@@ -21,17 +21,18 @@ public class ImageRequestHandle extends ImageCacheIntercept {
 
     @Override
     public void beforeRequest(Channel clientChannel, HttpRequest httpRequest, HttpProxyInterceptPipeline pipeline) throws Exception {
-        initRequest(httpRequest);
+        super.beforeRequest(clientChannel, httpRequest, pipeline);
         if (hasCache(clientChannel, httpRequest)) {
             return;
         }
-        super.beforeRequest(clientChannel, httpRequest, pipeline);
+        pipeline.beforeRequest(clientChannel, httpRequest);
     }
 
 
     public boolean hasCache(Channel ctx, Object msg) {
 //        System.out.println(msg.getClass());
 //        System.out.println(msg.toString());
+        Log.log("  GET CACHE:" + CacheManager.isCacheOpen + "| get url :" + host + " //" + url_);
         if (!CacheManager.isCacheOpen) return false;
 
         if (msg instanceof DefaultHttpRequest) {

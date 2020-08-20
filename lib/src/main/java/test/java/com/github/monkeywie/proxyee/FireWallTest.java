@@ -24,8 +24,8 @@ public class FireWallTest {
         Object res = null;
         try {
             engine.eval((new InputStreamReader(Thread.currentThread().getContextClassLoader().getResourceAsStream("gfwlist.pac"))));
-            String href = "https://baidu.com/";
-            res =invocable.invokeFunction("FindProxyForURL",new Object[]{"","www.google.com"});
+            String href = "http://google.com/";
+            res =invocable.invokeFunction("FindProxyForURL",new Object[]{"",".youtube.com"});
 
         } catch (ScriptException e) {
             e.printStackTrace();

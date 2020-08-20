@@ -22,6 +22,7 @@ public class HttpProxyInterceptPipeline implements Iterable<HttpProxyIntercept> 
   private RequestProto requestProto;
   private HttpRequest httpRequest;
   private HttpResponse httpResponse;
+  private String redirectHost;
 
   public HttpRequest getHttpRequest() {
     return httpRequest;
@@ -148,5 +149,13 @@ public class HttpProxyInterceptPipeline implements Iterable<HttpProxyIntercept> 
   @Override
   public Iterator<HttpProxyIntercept> iterator() {
     return intercepts.iterator();
+  }
+
+  public String getRedirectHost() {
+    return redirectHost;
+  }
+
+  public void setRedirectHost(String redirectHost) {
+    this.redirectHost = redirectHost;
   }
 }

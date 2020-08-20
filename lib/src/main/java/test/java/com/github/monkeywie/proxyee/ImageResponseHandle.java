@@ -30,8 +30,8 @@ public class ImageResponseHandle extends ImageCacheIntercept {
 
     @Override
     public void beforeRequest(Channel clientChannel, HttpRequest httpRequest, HttpProxyInterceptPipeline pipeline) throws Exception {
-        initRequest(httpRequest);
         super.beforeRequest(clientChannel, httpRequest, pipeline);
+        pipeline.beforeRequest(clientChannel, httpRequest);
     }
 
     @Override
@@ -75,8 +75,6 @@ public class ImageResponseHandle extends ImageCacheIntercept {
             return;
         }
         if (msg instanceof DefaultHttpContent) {
-//            System.out.println(" GET RESPONSE_CONTENT :" + msg.toString());
-
             DefaultHttpContent response = (DefaultHttpContent) msg;
             ByteBuf chunk = response.content();
             if (chunk.isReadable()) {
@@ -89,6 +87,7 @@ public class ImageResponseHandle extends ImageCacheIntercept {
         }
 
         if (msg instanceof LastHttpContent) {
+            Log.log("  RESPONSE |  url :" + host + "/" + url_);
             DownLoadExecutor.executor.execute(new Runnable() {
                 @Override
                 public void run() {

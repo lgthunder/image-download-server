@@ -13,8 +13,10 @@ import com.github.monkeywie.proxyee.server.HttpProxyServerConfig;
 import com.github.monkeywie.proxyee.util.ProtoUtil;
 import com.github.monkeywie.proxyee.util.ProtoUtil.RequestProto;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.SocketAddress;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
@@ -124,8 +126,9 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
                 status = 1;
             }
         } else { //ssl和websocket的握手处理
-            if (serverConfig.isHandleSsl()) {
+            if (serverConfig.isHandleSsl() && isLocal(ctx.channel().remoteAddress())) {
                 ByteBuf byteBuf = (ByteBuf) msg;
+                System.out.println(byteBuf.getByte(0));
                 if (byteBuf.getByte(0) == 22) {//ssl握手
                     isSsl = true;
                     int port = ((InetSocketAddress) ctx.channel().localAddress()).getPort();
@@ -141,6 +144,16 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
             }
             handleProxyData(ctx.channel(), msg, false);
         }
+    }
+
+    private boolean isLocal(SocketAddress address) {
+        if (address instanceof InetSocketAddress) {
+            InetSocketAddress socketAddress = (InetSocketAddress) address;
+            if (socketAddress.getHostName().equals("127.0.0.1") || socketAddress.getHostName().equals("192.168.1.170")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -181,7 +194,7 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
             }
 
 
-//            System.out.println("host:" + host + " | proxyHandler :" + proxyHandler);
+            System.out.println("host:" + host + " | proxyHandler :" + proxyHandler);
             RequestProto requestProto = new RequestProto(host, port, isSsl);
             ChannelInitializer channelInitializer =
                     isHttp ? new HttpProxyInitializer(channel, requestProto, proxyHandler)
@@ -229,6 +242,7 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
                     @Override
                     public void beforeRequest(Channel clientChannel, HttpRequest httpRequest,
                                               HttpProxyInterceptPipeline pipeline) throws Exception {
+                        Log.log("HttpProxyInterceptPipeline   beforeRequest |  url :" + host + "/");
                         handleProxyData(clientChannel, httpRequest, true);
                     }
 
@@ -241,11 +255,7 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
                     @Override
                     public void afterResponse(Channel clientChannel, Channel proxyChannel,
                                               HttpResponse httpResponse, HttpProxyInterceptPipeline pipeline) throws Exception {
-                        String location = httpResponse.headers().get(HttpHeaderNames.LOCATION, "");
-                        if (location.length() != 0 && RedirectHandle.handleRedirect) {
-                            location = location + RedirectHandle.REDIRECT + pipeline.getHttpRequest().headers().get(HttpHeaderNames.HOST);
-                            httpResponse.headers().set(HttpHeaderNames.LOCATION, location);
-                        }
+                        Log.log("HttpProxyInterceptPipeline   afterResponse |  url :" + host + "/");
                         clientChannel.writeAndFlush(httpResponse);
                         if (HttpHeaderValues.WEBSOCKET.toString()
                                 .equals(httpResponse.headers().get(HttpHeaderNames.UPGRADE))) {

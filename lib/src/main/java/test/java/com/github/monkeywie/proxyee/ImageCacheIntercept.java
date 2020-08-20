@@ -5,8 +5,11 @@ import com.github.monkeywie.proxyee.intercept.HttpProxyIntercept;
 import com.github.monkeywie.proxyee.intercept.HttpProxyInterceptPipeline;
 import com.github.monkeywie.proxyee.util.ProtoUtil;
 
+import org.bouncycastle.cert.ocsp.Req;
+
 import io.netty.channel.Channel;
 import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 
@@ -21,31 +24,11 @@ public abstract class ImageCacheIntercept extends HttpProxyIntercept {
     }
 
 
-    public void initRequest(HttpRequest httpRequest) {
-        host = ProtoUtil.getRequestProto(httpRequest).getHost();
-        if (httpRequest instanceof HttpRequest) {
-            HttpRequest request = httpRequest;
-            url_ = request.uri();
-            String[] s = url_.split(RedirectHandle.REDIRECT);
-            if (s.length > 1 && RedirectHandle.handleRedirect) {
-                request.setUri(s[0]);
-                url_ = s[0];
-                redirectHost = s[1];
-            } else {
-                redirectHost = host;
-            }
-        }
-    }
-
     @Override
     public void beforeRequest(Channel clientChannel, HttpRequest httpRequest, HttpProxyInterceptPipeline pipeline) throws Exception {
-        super.beforeRequest(clientChannel, httpRequest, pipeline);
-        if (redirectHost.length() != 0) {
-            Log.log("beforeRequest  httpRequest from " + redirectHost + " to:" + host + url_);
-        } else {
-            Log.log("beforeRequest  httpRequest" + host + url_);
-        }
-
+        url_ = httpRequest.uri();
+        host = ProtoUtil.getRequestProto(httpRequest).getHost();
+        redirectHost = pipeline.getRedirectHost();
     }
 
     @Override

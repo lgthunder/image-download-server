@@ -26,6 +26,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.CharsetUtil;
 
+import java.net.InetAddress;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -88,6 +89,7 @@ public class HttpProxyServer {
             httpProxyExceptionHandle = new HttpProxyExceptionHandle();
         }
     }
+
 
     public HttpProxyServer serverConfig(HttpProxyServerConfig serverConfig) {
         this.serverConfig = serverConfig;
