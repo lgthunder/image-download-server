@@ -6716,7 +6716,8 @@ function startsWith(source, prefix) {
 
 function endsWith(source, suffix) {
     var i, l1 = source.length, l2 = suffix.length;
-    for (i = 0; i < l2; i++) {
+      var s =l1>l2?l2:l1
+    for (i = 0; i < s; i++) {
         if (source.charAt(l1 - i - 1) !== suffix.charAt(l2 - i - 1)) {
             return false;
         }
@@ -6752,6 +6753,12 @@ function FindProxyForURL(url, hostname) {
             return proxy;
         }
     }
+
+     for (i = 0, l = INCLUDE.length; i < l; i++) {
+            if (endsWith(hostname, INCLUDE[i])) {
+                return proxy;
+            }
+        }
 
     for (i = 0, l = ANCHOR.length; i < l; i++) {
         if (anchorWith(hostname, ANCHOR[i])) {
