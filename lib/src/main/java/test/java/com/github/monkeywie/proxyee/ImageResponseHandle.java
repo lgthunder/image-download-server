@@ -3,6 +3,7 @@ package test.java.com.github.monkeywie.proxyee;
 import com.example.lib.DownLoader;
 import com.example.lib.Log;
 import com.github.monkeywie.proxyee.intercept.HttpProxyInterceptPipeline;
+import com.github.monkeywie.proxyee.util.ProtoUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,17 +27,12 @@ public class ImageResponseHandle extends ImageCacheIntercept {
     private long contentLength;
 
 
+
+
     List<byte[]> list = new LinkedList<>();
 
     @Override
-    public void beforeRequest(Channel clientChannel, HttpRequest httpRequest, HttpProxyInterceptPipeline pipeline) throws Exception {
-        super.beforeRequest(clientChannel, httpRequest, pipeline);
-        pipeline.beforeRequest(clientChannel, httpRequest);
-    }
-
-    @Override
     public void afterResponse(Channel clientChannel, Channel proxyChannel, HttpResponse httpResponse, HttpProxyInterceptPipeline pipeline) throws Exception {
-        super.afterResponse(clientChannel, proxyChannel, httpResponse, pipeline);
         if (httpResponse instanceof DefaultHttpResponse) {
             DefaultHttpResponse response = (DefaultHttpResponse) httpResponse;
             contentType = response.headers().get("Content-Type");
@@ -50,8 +46,16 @@ public class ImageResponseHandle extends ImageCacheIntercept {
 //            host = ((InetSocketAddress) (proxy.pipeline().channel().remoteAddress())).getHostName();
 
 //            System.out.println("client: " + clientChannel.toString() + "| proxy :" + proxy.channel() + "RESPONSE: ");
-
         }
+        super.afterResponse(clientChannel, proxyChannel, httpResponse, pipeline);
+    }
+
+    @Override
+    public void beforeRequest(Channel clientChannel, HttpRequest httpRequest, HttpProxyInterceptPipeline pipeline) throws Exception {
+        url_ = httpRequest.uri();
+        host = ProtoUtil.getRequestProto(httpRequest).getHost();
+        redirectHost = pipeline.getRedirectHost();
+        pipeline.beforeRequest(clientChannel, httpRequest);
     }
 
 
@@ -87,7 +91,7 @@ public class ImageResponseHandle extends ImageCacheIntercept {
         }
 
         if (msg instanceof LastHttpContent) {
-            Log.log("  RESPONSE |  url :" + host + "/" + url_);
+            Log.log("  RESPONSE |  url :" + redirectHost + "/" + url_);
             DownLoadExecutor.executor.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -95,7 +99,7 @@ public class ImageResponseHandle extends ImageCacheIntercept {
                     if (name.length() == 0) {
                         return;
                     }
-                    File file = new File(CacheManager.getSavePath(host, url_), name);
+                    File file = new File(CacheManager.getSavePath(redirectHost, url_), name);
 
                     if (!file.getParentFile().exists()) {
                         file.getParentFile().mkdirs();

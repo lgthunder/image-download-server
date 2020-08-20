@@ -67,7 +67,7 @@ public class InterceptHttpProxyServer {
                                 pipeline.afterResponse(clientChannel, proxyChannel, httpResponse);
                             }
                         });
-//                        pipeline.addFirst(new RedirectHandle());
+                        pipeline.addFirst(new RedirectHandle());
                         pipeline.addLast(new ImageRequestHandle());
                         pipeline.addLast(new ImageResponseHandle());
                         pipeline.addLast(new VideoIntercept());

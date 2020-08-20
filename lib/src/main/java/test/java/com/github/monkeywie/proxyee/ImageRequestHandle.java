@@ -3,6 +3,7 @@ package test.java.com.github.monkeywie.proxyee;
 import com.example.lib.DownLoader;
 import com.example.lib.Log;
 import com.github.monkeywie.proxyee.intercept.HttpProxyInterceptPipeline;
+import com.github.monkeywie.proxyee.util.ProtoUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +22,8 @@ public class ImageRequestHandle extends ImageCacheIntercept {
 
     @Override
     public void beforeRequest(Channel clientChannel, HttpRequest httpRequest, HttpProxyInterceptPipeline pipeline) throws Exception {
-        super.beforeRequest(clientChannel, httpRequest, pipeline);
+        url_ = httpRequest.uri();
+        host = ProtoUtil.getRequestProto(httpRequest).getHost();
         if (hasCache(clientChannel, httpRequest)) {
             return;
         }

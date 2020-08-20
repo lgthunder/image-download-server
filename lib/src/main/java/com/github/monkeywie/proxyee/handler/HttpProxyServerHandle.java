@@ -149,7 +149,7 @@ public class HttpProxyServerHandle extends ChannelInboundHandlerAdapter {
     private boolean isLocal(SocketAddress address) {
         if (address instanceof InetSocketAddress) {
             InetSocketAddress socketAddress = (InetSocketAddress) address;
-            if (socketAddress.getHostName().equals("127.0.0.1") || socketAddress.getHostName().equals("192.168.1.170")) {
+            if (socketAddress.getHostName().contains("127.0.0.1") || socketAddress.getHostName().contains("192.168.1.170")) {
                 return true;
             }
         }

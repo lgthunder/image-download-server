@@ -24,12 +24,7 @@ public abstract class ImageCacheIntercept extends HttpProxyIntercept {
     }
 
 
-    @Override
-    public void beforeRequest(Channel clientChannel, HttpRequest httpRequest, HttpProxyInterceptPipeline pipeline) throws Exception {
-        url_ = httpRequest.uri();
-        host = ProtoUtil.getRequestProto(httpRequest).getHost();
-        redirectHost = pipeline.getRedirectHost();
-    }
+
 
     @Override
     public void beforeRequest(Channel clientChannel, HttpContent httpContent, HttpProxyInterceptPipeline pipeline) throws Exception {

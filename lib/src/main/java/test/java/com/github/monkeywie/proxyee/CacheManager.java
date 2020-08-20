@@ -19,7 +19,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 public class CacheManager {
 
-    public static boolean isCacheOpen = false;
+    public static boolean isCacheOpen = true;
 
 
 
