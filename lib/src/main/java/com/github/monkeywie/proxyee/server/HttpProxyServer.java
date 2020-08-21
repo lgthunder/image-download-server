@@ -1,5 +1,6 @@
 package com.github.monkeywie.proxyee.server;
 
+import com.example.lib.Log;
 import com.github.monkeywie.proxyee.crt.CertPool;
 import com.github.monkeywie.proxyee.crt.CertUtil;
 import com.github.monkeywie.proxyee.exception.HttpProxyExceptionHandle;
@@ -25,6 +26,9 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.CharsetUtil;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
+import test.java.com.github.monkeywie.proxyee.BatteryBoot;
 
 import java.net.InetAddress;
 import java.security.KeyPair;
@@ -118,7 +122,7 @@ public class HttpProxyServer {
         return this;
     }
 
-    public void start(int port) {
+    public void start(int port) throws InterruptedException {
         init();
         bossGroup = new NioEventLoopGroup(serverConfig.getBossGroupThreads());
         workerGroup = new NioEventLoopGroup(serverConfig.getWorkerGroupThreads());
@@ -147,10 +151,17 @@ public class HttpProxyServer {
                     });
             ChannelFuture f = b
                     .bind(port)
+                    .addListener(new GenericFutureListener<Future<? super Void>>() {
+                        @Override
+                        public void operationComplete(Future<? super Void> future) throws Exception {
+                            if (future.isSuccess()) {
+                                BatteryBoot.showMessage("proxy server connect success");
+                                Log.log("proxy server connect success");
+                            }
+                        }
+                    })
                     .sync();
             f.channel().closeFuture().sync();
-        } catch (Exception e) {
-            e.printStackTrace();
         } finally {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();

@@ -17,6 +17,7 @@ buildscript {
 }
 
 shadowJar {
+    delete("build\\libs\\" + baseName + "-" + version + ".jar ")
     manifest {
         //main 函数地址类
         attributes 'Main-Class': 'test.java.com.github.monkeywie.proxyee.Main'
@@ -31,6 +32,11 @@ shadowJar {
 //        include(dependency('com.alibaba:fastjson:1.2.58'))
     }
 }
+
+def outdir = 'E:\\proxy-win\\'
+//def outdir = 'build\\libs\\test\\'
+def jar_dir = "build\\libs\\" + shadowJar.baseName + "-" + shadowJar.version + ".jar "
+
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -50,10 +56,8 @@ compileJava {
 }
 
 
-def outdir = 'E:\\proxy-win\\'
-//def outdir = 'build\\libs\\test\\'
-def jar_dir = "build\\libs\\" + shadowJar.baseName + "-" + shadowJar.version + ".jar "
 task copyToDir() {
+
     def result = copy() {
             //闭包参数
         CopySpec copySpec ->

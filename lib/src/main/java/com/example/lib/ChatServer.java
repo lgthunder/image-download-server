@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 
 import okhttp3.OkHttpClient;
+import test.java.com.github.monkeywie.proxyee.BatteryBoot;
 import test.java.com.github.monkeywie.proxyee.CacheManager;
 
 
@@ -127,7 +128,12 @@ public class ChatServer extends WebSocketServer {
             port = Integer.parseInt(args[0]);
         } catch (Exception ex) {
         }
-        ChatServer s = new ChatServer(port);
+        ChatServer s = new ChatServer(port) {
+            @Override
+            public void onError(WebSocket conn, Exception ex) {
+                super.onError(conn, ex);
+            }
+        };
         s.start();
         System.out.println("ChatServer started on port: " + s.getPort());
 
@@ -136,14 +142,17 @@ public class ChatServer extends WebSocketServer {
     @Override
     public void onError(WebSocket conn, Exception ex) {
         ex.printStackTrace();
+        BatteryBoot.showMessage("chatServer error :" + ex.getMessage());
         if (conn != null) {
             // some errors like port binding failed may not be assignable to a specific websocket
+            Log.log("chatServer error :" + ex.getMessage());
         }
     }
 
     @Override
     public void onStart() {
-        System.out.println("Server started!");
+        BatteryBoot.showMessage("Chat Server started!");
+        System.out.println("Chat Server started!");
         setConnectionLostTimeout(0);
         setConnectionLostTimeout(100);
     }

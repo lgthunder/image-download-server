@@ -109,7 +109,7 @@ public class BatUtil {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
         }
         System.out.println(file.getPath());
         if (str.contains(flag)) return true;

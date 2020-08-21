@@ -85,7 +85,7 @@ public class ScanService extends Thread {
 
         if (!dirFile.isDirectory()) {
             if (dirFile.isFile()) {
-                System.out.println(dirFile.getCanonicalFile());
+//                System.out.println(dirFile.getCanonicalFile());
             }
             return;
         }
@@ -101,7 +101,7 @@ public class ScanService extends Thread {
             String name = file.getName();
 
             if (file.isDirectory()) {
-                System.out.println(name);
+//                System.out.println(name);
                 findListFile(file.getPath());
                 find(file.getCanonicalPath());
             }
