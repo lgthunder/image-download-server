@@ -4,8 +4,10 @@ public class Main {
 
     public static void main(String[] args) {
 
-        BatteryBoot boot = new BatteryBoot("proxy");
-        boot.setVisible(true);
+        BatteryBoot.INSTACE = new BatteryBoot("proxy");
+
+        BatteryBoot.INSTACE.setLocationRelativeTo(null);
+        BatteryBoot.INSTACE.setVisible(true);
 //        startServer(9190);
     }
 

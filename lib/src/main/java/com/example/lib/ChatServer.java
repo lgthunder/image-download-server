@@ -12,6 +12,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -142,7 +143,9 @@ public class ChatServer extends WebSocketServer {
     @Override
     public void onError(WebSocket conn, Exception ex) {
         ex.printStackTrace();
-        BatteryBoot.showMessage("chatServer error :" + ex.getMessage());
+        if (ex instanceof BindException) {
+            BatteryBoot.showMessage("chatServer error :" + ex.getMessage());
+        }
         if (conn != null) {
             // some errors like port binding failed may not be assignable to a specific websocket
             Log.log("chatServer error :" + ex.getMessage());

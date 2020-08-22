@@ -91,7 +91,10 @@ public class InterceptHttpProxyServer {
                     public void afterCatch(Channel clientChannel, Channel proxyChannel, Throwable cause)
                             throws Exception {
                         cause.printStackTrace();
-                        BatteryBoot.showMessage("Proxy  error :" + cause.getMessage());
+                        if (cause instanceof BindException) {
+                            BatteryBoot.showMessage("Proxy  error :" + cause.getMessage());
+                        }
+
                         Log.log("Proxy  error :" + cause.getMessage());
                     }
                 });
