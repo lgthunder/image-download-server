@@ -9,13 +9,24 @@ import com.github.monkeywie.proxyee.util.BatUtil;
 
 import org.java_websocket.WebSocket;
 
+import java.awt.AWTException;
 import java.awt.Button;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.awt.Label;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
 import java.awt.TextField;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,14 +46,17 @@ public class BatteryBoot extends JFrame {
     CancelTask restartTask;
     public static BatteryBoot INSTACE;
     ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private TrayIcon trayIcon;
 
     public BatteryBoot(String title) {
         super(title);
+//        setType(Type.UTILITY);
         setSize(400, 200);
         Button connect = new IButton("Connect");
         Button restart = new IButton("Restart");
         Button stop = new IButton("Stop");
         Button proxy = new IButton("ConfigProxy");
+        Button exit = new IButton("Exit");
         serverPort = new TextField("9999");
         downLoadPort = new TextField("8887");
         serverPort.setSize(20, 50);
@@ -56,8 +70,8 @@ public class BatteryBoot extends JFrame {
         add(connect);
         add(restart);
         add(stop);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
+        setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        add(exit);
         downPanel.add(downPortLabel);
         downPanel.add(downLoadPort);
         add(proxyPanel);
@@ -117,10 +131,54 @@ public class BatteryBoot extends JFrame {
                 InterceptHttpProxyServer.configProxy(Integer.valueOf(serverPort.getText()));
             }
         });
+        exit.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                System.exit(0);
+            }
+        });
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent windowEvent) {
+                super.windowClosing(windowEvent);
+                minimizeToTray();
+            }
+
+
+        });
+        initTrayIcon();
+    }
+
+    private void initTrayIcon() {
+        Image image = Toolkit.getDefaultToolkit().getImage(Thread.currentThread().getContextClassLoader().getResource("photo.jpg"));
+        PopupMenu popup = new PopupMenu();
+        MenuItem exitItem = new MenuItem("Show");
+        ActionListener listener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                setVisible(true);
+                setExtendedState(Frame.NORMAL);
+                SystemTray.getSystemTray().remove(trayIcon);
+            }
+        };
+        exitItem.addActionListener(listener);
+        popup.add(exitItem);
+        //根据image、提示、菜单创建TrayIcon
+        this.trayIcon = new TrayIcon(image, "proxy", popup);
+        //给TrayIcon添加事件监听器
+        this.trayIcon.addActionListener(listener);
+    }
+
+    public void minimizeToTray() {
+        SystemTray tray = SystemTray.getSystemTray();
+        try {
+            tray.add(this.trayIcon);
+        } catch (AWTException ex) {
+            ex.printStackTrace();
+        }
     }
 
     public static void showMessage(String message) {
-        JOptionPane.showMessageDialog(INSTACE, message,"",JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(INSTACE, message, "", JOptionPane.ERROR_MESSAGE);
     }
 
     public CancelTask getStartTask() {
